@@ -1,0 +1,24 @@
+{
+  "name": "Wild Coast Trip",
+  "short_name": "Wild Coast",
+  "description": "Dan & son South Africa 2026",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0a09",
+  "theme_color": "#0c0a09",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
