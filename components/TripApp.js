@@ -874,12 +874,12 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* === WEATHER MODAL — TRULY LIVE OPEN-METEO === */}
+      {/* === WEATHER MODAL — Simplified: live data + 1-line historical === */}
       {showWeather && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-sky-900 to-blue-900 px-4 py-4 flex items-center gap-3 border-b border-sky-800">
             <Cloud size={22} className="text-sky-200" />
-            <div className="flex-1"><div className="font-bold text-sky-50 text-lg">Weather</div><div className="text-xs text-sky-200 font-sans">Live forecast + climate baseline</div></div>
+            <div className="flex-1"><div className="font-bold text-sky-50 text-lg">Weather</div><div className="text-xs text-sky-200 font-sans">Live forecast</div></div>
             <button onClick={() => setShowWeather(false)} className="text-sky-100 p-2"><X size={22} /></button>
           </div>
           {isOnline && (
@@ -889,33 +889,26 @@ export default function TripApp() {
               </button>
             </div>
           )}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {weatherLocations.map(loc => {
               const cached = weatherCache[loc.id];
               const isLoading = weatherFetching[loc.id];
               const live = cached?.live;
               return (
                 <div key={loc.id} className="bg-stone-900 rounded-xl border border-stone-800 overflow-hidden">
-                  <div className="bg-gradient-to-r from-sky-950 to-stone-900 px-4 py-3 border-b border-stone-800">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="text-2xl">{loc.icon}</div>
-                        <div className="font-bold text-sky-100 text-lg truncate">{loc.name}</div>
-                      </div>
-                      <button onClick={() => fetchLiveWeather(loc)} disabled={!isOnline || isLoading} className="text-xs bg-sky-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-sans font-semibold rounded-full px-3 py-1.5 flex items-center gap-1 flex-shrink-0">
-                        {isLoading ? <><Loader2 size={12} className="animate-spin" /> Loading</> : live ? '🔄 Refresh' : '📡 Get live'}
-                      </button>
+                  <div className="bg-gradient-to-r from-sky-950 to-stone-900 px-4 py-3 border-b border-stone-800 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="text-2xl">{loc.icon}</div>
+                      <div className="font-bold text-sky-100 text-lg truncate">{loc.name}</div>
                     </div>
-                    <div className="text-[10px] tracking-widest uppercase text-sky-400 font-sans font-semibold">{loc.season}</div>
+                    <button onClick={() => fetchLiveWeather(loc)} disabled={!isOnline || isLoading} className="text-xs bg-sky-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-sans font-semibold rounded-full px-3 py-1.5 flex items-center gap-1 flex-shrink-0">
+                      {isLoading ? <><Loader2 size={12} className="animate-spin" /> Loading</> : live ? '🔄 Refresh' : '📡 Get live'}
+                    </button>
                   </div>
-                  <div className="p-4 space-y-4">
+                  <div className="p-4 space-y-3">
                     {live && (
-                      <div className="bg-gradient-to-br from-sky-950 to-blue-950 border border-sky-700 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-xs text-sky-300 font-sans uppercase tracking-wider font-semibold">🟢 Live Now</div>
-                          <div className="text-[10px] text-sky-500 font-sans">{new Date(cached.fetched).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                        </div>
-                        <div className="flex items-center gap-4 mb-4">
+                      <>
+                        <div className="flex items-center gap-4">
                           <div className="text-6xl">{weatherCodeToEmoji(live.current.weather_code)}</div>
                           <div>
                             <div className="text-5xl font-bold text-sky-50">{Math.round(live.current.temperature_2m)}°F</div>
@@ -923,8 +916,7 @@ export default function TripApp() {
                             <div className="text-xs text-sky-400 font-sans mt-1">💨 {Math.round(live.current.wind_speed_10m)} mph · 💧 {live.current.relative_humidity_2m}%</div>
                           </div>
                         </div>
-                        <div className="pt-3 border-t border-sky-800">
-                          <div className="text-xs text-sky-300 font-sans uppercase tracking-wider mb-2 font-semibold">7-Day Forecast</div>
+                        <div className="pt-3 border-t border-stone-800">
                           <div className="grid grid-cols-7 gap-1">
                             {live.daily.weather_code.slice(0, 7).map((code, i) => {
                               const date = new Date(Date.now() + i * 86400000);
@@ -940,49 +932,20 @@ export default function TripApp() {
                             })}
                           </div>
                         </div>
-                      </div>
+                        <div className="text-[10px] text-stone-500 font-sans text-right">Updated {new Date(cached.fetched).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                      </>
                     )}
                     {cached?.error && (
                       <div className="bg-rose-950 border border-rose-800 rounded-lg p-3">
-                        <div className="text-xs text-rose-300 font-sans uppercase tracking-wider mb-1 font-semibold">⚠️ Could not fetch</div>
-                        <div className="text-sm text-rose-100 font-sans">{cached.error}</div>
+                        <div className="text-xs text-rose-300 font-sans">{cached.error}</div>
                       </div>
                     )}
-                    <div>
-                      <div className="text-xs text-amber-400 font-sans uppercase tracking-wider font-semibold mb-2">📚 June Climate Baseline</div>
-                      <div className="bg-stone-950 rounded-lg p-3 border border-stone-800">
-                        <div className="text-sm text-stone-100 font-sans font-semibold">{loc.tempRange}</div>
-                        <div className="text-xs text-stone-400 font-sans mt-2 leading-relaxed">{loc.typical}</div>
-                      </div>
+                    {!live && !cached?.error && (
+                      <div className="text-center py-6 text-xs text-stone-500 font-sans">Tap &quot;Get live&quot; for current forecast</div>
+                    )}
+                    <div className="text-[11px] text-stone-500 font-sans italic border-t border-stone-800 pt-2">
+                      June typical: {loc.tempRange.replace('Highs ', '').replace(' · Lows ', ' / ')} · {loc.season.toLowerCase()}
                     </div>
-                    <div className="bg-amber-950 border border-amber-900 rounded-lg p-3">
-                      <div className="text-xs text-amber-400 font-sans uppercase tracking-wider mb-1 font-semibold">👔 Pack For This</div>
-                      <div className="text-sm text-amber-50 font-sans leading-relaxed">{loc.packFor}</div>
-                    </div>
-                    {loc.dayByDay && loc.dayByDay.length > 0 && (
-                      <div>
-                        <div className="text-xs text-amber-400 font-sans uppercase tracking-wider mb-2 font-semibold">Your Days Here</div>
-                        <div className="space-y-2">
-                          {loc.dayByDay.map((d, i) => (
-                            <div key={i} className={`rounded-lg p-3 border ${d.warning ? 'bg-rose-950 border-rose-900' : d.ideal ? 'bg-emerald-950 border-emerald-900' : 'bg-stone-950 border-stone-800'}`}>
-                              <div className="flex items-center justify-between mb-1">
-                                <div className={`text-xs font-sans font-bold ${d.warning ? 'text-rose-300' : d.ideal ? 'text-emerald-300' : 'text-stone-300'}`}>{d.date}</div>
-                                {d.ideal && <span className="text-[9px] bg-emerald-600 text-white rounded-full px-2 py-0.5 font-sans font-bold uppercase">Good day</span>}
-                                {d.warning && <span className="text-[9px] bg-rose-600 text-white rounded-full px-2 py-0.5 font-sans font-bold uppercase">Heads Up</span>}
-                              </div>
-                              <div className="text-sm text-stone-100 font-sans leading-relaxed">{d.forecast}</div>
-                              {d.warning && <div className="text-xs text-rose-300 font-sans mt-2 italic">⚠️ {d.warning}</div>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {loc.kidNote && (
-                      <div className="bg-gradient-to-br from-emerald-950 to-stone-900 border border-emerald-900 rounded-lg p-3">
-                        <div className="text-xs text-emerald-400 font-sans uppercase tracking-wider mb-1 font-semibold">👦 For your son</div>
-                        <div className="text-sm text-emerald-50 font-sans leading-relaxed">{loc.kidNote}</div>
-                      </div>
-                    )}
                   </div>
                 </div>
               );
