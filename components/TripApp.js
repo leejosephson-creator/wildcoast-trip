@@ -8,6 +8,10 @@ import {
   ExternalLink, BookText, Heart, Target, Plus, Star, Clock
 } from 'lucide-react';
 
+// Bump this version number any time you push an app update.
+// Users will see an "Update available" banner when their cached version doesn't match.
+const APP_VERSION = '2026.04.24.1';
+
 const storage = {
   get: (key) => {
     if (typeof window === 'undefined') return null;
@@ -52,6 +56,48 @@ export default function TripApp() {
   const [packingFilter, setPackingFilter] = useState('all');
   const [copiedShare, setCopiedShare] = useState(false);
   const [mapFilter, setMapFilter] = useState('all');
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  // Force-reload the page, bypassing all caches. This is the nuclear refresh.
+  const forceUpdate = () => {
+    if (typeof window === 'undefined') return;
+    // Add a cache-buster query string so the server sends fresh HTML
+    const url = new URL(window.location.href);
+    url.searchParams.set('v', Date.now().toString());
+    window.location.href = url.toString();
+  };
+
+  // Check for updates by fetching the page with no-cache and reading the version
+  const checkForUpdate = async (silent = false) => {
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+    if (!silent) setCheckingUpdate(true);
+    try {
+      const res = await fetch(window.location.origin + '/?v=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      const text = await res.text();
+      // Look for the version string in the HTML
+      const match = text.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (match && match[1] && match[1] !== APP_VERSION) {
+        setUpdateAvailable(true);
+      }
+    } catch (e) {
+      // Silent fail - we don't want to bother user if check fails
+    } finally {
+      if (!silent) setCheckingUpdate(false);
+    }
+  };
+
+  // Auto-check for updates when the app mounts and when it becomes visible again
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    checkForUpdate(true);
+    const onVisible = () => { if (document.visibilityState === 'visible') checkForUpdate(true); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const TRIP_START = new Date('2026-05-31T17:00:00');
   const TRIP_END = new Date('2026-06-15T23:59:00');
@@ -516,6 +562,16 @@ export default function TripApp() {
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 pb-20" style={{ fontFamily: 'ui-serif, Georgia, serif' }}>
+      {updateAvailable && (
+        <div className="bg-gradient-to-r from-emerald-700 to-teal-700 px-4 py-3 flex items-center gap-3 sticky top-0 z-40">
+          <div className="text-xl">✨</div>
+          <div className="flex-1">
+            <div className="text-sm font-bold text-white">Update available</div>
+            <div className="text-[11px] text-emerald-100 font-sans">Tap to get the latest version</div>
+          </div>
+          <button onClick={forceUpdate} className="bg-white text-emerald-800 rounded-full px-4 py-1.5 text-xs font-sans font-bold">Update</button>
+        </div>
+      )}
       {activeTab === 'home' && (
         <div>
           <div className="relative overflow-hidden bg-gradient-to-br from-orange-900 via-rose-900 to-amber-950 px-6 pt-10 pb-8">
@@ -791,6 +847,12 @@ export default function TripApp() {
                 <ChevronRight size={18} className={btn.gradient ? 'text-rose-300' : btn.purple ? 'text-pink-400' : 'text-stone-600'} />
               </button>
             ))}
+          </div>
+          <div className="px-4 mt-6 mb-4">
+            <button onClick={async () => { await checkForUpdate(false); if (!updateAvailable) forceUpdate(); }} disabled={checkingUpdate} className="w-full bg-stone-900 border border-stone-800 rounded-xl p-4 flex items-center justify-center gap-2 text-sm font-sans text-stone-300 disabled:opacity-60">
+              {checkingUpdate ? <><Loader2 size={16} className="animate-spin" /> Checking…</> : <>🔄 Force refresh app</>}
+            </button>
+            <div className="text-[10px] text-stone-600 font-sans text-center mt-2">Version {APP_VERSION}</div>
           </div>
         </div>
       )}
