@@ -8,16 +8,10 @@ import {
   ExternalLink, BookText, Heart, Target, Plus, Star, Clock
 } from 'lucide-react';
 
-// ============================================================
-// STORAGE - uses localStorage (works offline, per-device)
-// ============================================================
 const storage = {
   get: (key) => {
     if (typeof window === 'undefined') return null;
-    try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : null;
-    } catch { return null; }
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
   },
   set: (key, value) => {
     if (typeof window === 'undefined') return;
@@ -41,7 +35,6 @@ export default function TripApp() {
   const [daysUntil, setDaysUntil] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
   const [kidMode, setKidMode] = useState(false);
-
   const [showCalc, setShowCalc] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
   const [showPhrases, setShowPhrases] = useState(false);
@@ -66,28 +59,10 @@ export default function TripApp() {
   const isDuringTrip = today >= TRIP_START && today <= TRIP_END;
   const tripDayIndex = isDuringTrip ? Math.floor((today - TRIP_START) / (1000 * 60 * 60 * 24)) : null;
 
-  // Load persisted data
   useEffect(() => {
-    const loaded = {
-      checkedItems: storage.get('checkedItems'),
-      notes: storage.get('notes'),
-      reservations: storage.get('reservations'),
-      bigFive: storage.get('bigFive'),
-      flights: storage.get('flights'),
-      journal: storage.get('journal'),
-      memories: storage.get('memories'),
-      missionProgress: storage.get('missionProgress'),
-      weatherCache: storage.get('weatherCache')
-    };
-    if (loaded.checkedItems) setCheckedItems(loaded.checkedItems);
-    if (loaded.notes) setNotes(loaded.notes);
-    if (loaded.reservations) setReservations(loaded.reservations);
-    if (loaded.bigFive) setBigFive(loaded.bigFive);
-    if (loaded.flights) setFlights(loaded.flights);
-    if (loaded.journal) setJournal(loaded.journal);
-    if (loaded.memories && Array.isArray(loaded.memories)) setMemories(loaded.memories);
-    if (loaded.missionProgress) setMissionProgress(loaded.missionProgress);
-    if (loaded.weatherCache) setWeatherCache(loaded.weatherCache);
+    const k = ['checkedItems','notes','reservations','bigFive','flights','journal','memories','missionProgress','weatherCache'];
+    const s = { checkedItems: setCheckedItems, notes: setNotes, reservations: setReservations, bigFive: setBigFive, flights: setFlights, journal: setJournal, memories: setMemories, missionProgress: setMissionProgress, weatherCache: setWeatherCache };
+    k.forEach(key => { const v = storage.get(key); if (v) s[key](v); });
   }, []);
 
   useEffect(() => {
@@ -104,10 +79,7 @@ export default function TripApp() {
     setIsOnline(navigator.onLine);
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
   const toggleCheck = (id) => { const next = { ...checkedItems, [id]: !checkedItems[id] }; setCheckedItems(next); storage.set('checkedItems', next); };
@@ -122,12 +94,16 @@ export default function TripApp() {
   const deleteMemory = (id) => { const next = memories.filter(m => m.id !== id); setMemories(next); storage.set('memories', next); };
   const toggleMission = (id) => { const next = { ...missionProgress, [id]: !missionProgress[id] }; setMissionProgress(next); storage.set('missionProgress', next); };
 
-  // ============================================================
-  // LIVE WEATHER via Open-Meteo (no API key, works in real browsers)
-  // ============================================================
+  const weatherLocations = [
+    { id: 'capetown', name: 'Cape Town', icon: '🏖️', lat: -33.9249, lng: 18.4241, season: 'Winter', tempRange: 'H 62-65°F / L 47-52°F', typical: 'Wet season. Windy.' },
+    { id: 'hoedspruit', name: 'Kruger (Hoedspruit)', icon: '🦁', lat: -24.3485, lng: 31.0494, season: 'Dry winter', tempRange: 'H 75-78°F / L 40-45°F', typical: 'Cold mornings, warm days.' },
+    { id: 'johannesburg', name: 'Johannesburg', icon: '🏙️', lat: -26.2041, lng: 28.0473, season: 'Dry winter', tempRange: 'H 62-65°F / L 38-42°F', typical: 'High altitude. Clear and dry.' },
+    { id: 'atlanta', name: 'Atlanta (layover)', icon: '✈️', lat: 33.7490, lng: -84.3880, season: 'Late spring', tempRange: 'H 82-86°F / L 64-68°F', typical: 'Warm, humid, possible storms.' }
+  ];
+
   const fetchLiveWeather = async (loc) => {
     if (!isOnline) {
-      const next = { ...weatherCache, [loc.id]: { error: 'You are offline. Connect to WiFi or cellular data and try again.', fetched: new Date().toISOString() } };
+      const next = { ...weatherCache, [loc.id]: { error: 'Offline. Connect to data and try again.', fetched: new Date().toISOString() } };
       setWeatherCache(next);
       return;
     }
@@ -135,27 +111,23 @@ export default function TripApp() {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lng}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=7`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (!data?.current || !data?.daily) throw new Error('Unexpected response format');
+      if (!data?.current || !data?.daily) throw new Error('Bad data shape');
       const next = { ...weatherCache, [loc.id]: { live: data, fetched: new Date().toISOString() } };
       setWeatherCache(next);
       storage.set('weatherCache', next);
     } catch (err) {
-      const next = { ...weatherCache, [loc.id]: { error: err.message || 'Could not fetch weather. Try again.', fetched: new Date().toISOString() } };
+      const next = { ...weatherCache, [loc.id]: { error: err.message || 'Fetch failed', fetched: new Date().toISOString() } };
       setWeatherCache(next);
     } finally {
       setWeatherFetching(prev => ({ ...prev, [loc.id]: false }));
     }
   };
 
-  const fetchAllWeather = async () => {
-    for (const loc of weatherLocations) {
-      await fetchLiveWeather(loc);
-    }
-  };
+  const fetchAllWeather = async () => { for (const loc of weatherLocations) await fetchLiveWeather(loc); };
 
-  const weatherCodeToEmoji = (code) => {
+  const wEmoji = (code) => {
     if (code === 0) return '☀️';
     if (code <= 3) return '⛅';
     if (code <= 48) return '🌫️';
@@ -165,45 +137,17 @@ export default function TripApp() {
     if (code >= 95) return '⛈️';
     return '☁️';
   };
-
-  const weatherCodeToText = (code) => {
-    if (code === 0) return 'Clear sky';
+  const wText = (code) => {
+    if (code === 0) return 'Clear';
     if (code <= 3) return 'Partly cloudy';
     if (code <= 48) return 'Foggy';
     if (code <= 57) return 'Drizzle';
     if (code <= 67) return 'Rain';
     if (code <= 77) return 'Snow';
     if (code <= 82) return 'Showers';
-    if (code >= 95) return 'Thunderstorm';
+    if (code >= 95) return 'Storm';
     return 'Cloudy';
   };
-
-  const weatherLocations = [
-    {
-      id: 'capetown', name: 'Cape Town', icon: '🏖️', lat: -33.9249, lng: 18.4241,
-      season: 'Winter (Southern Hemisphere)', tempRange: 'Highs 62-65°F · Lows 47-52°F',
-      typical: 'Wet season. Windy and rainy mixed with bright clear days.',
-      packFor: '', dayByDay: [], kidNote: ''
-    },
-    {
-      id: 'hoedspruit', name: 'Kruger (Hoedspruit)', icon: '🦁', lat: -24.3485, lng: 31.0494,
-      season: 'Dry winter', tempRange: 'Highs 75-78°F · Lows 40-45°F',
-      typical: 'Warm sunny days, cold mornings. Best safari weather.',
-      packFor: '', dayByDay: [], kidNote: ''
-    },
-    {
-      id: 'johannesburg', name: 'Johannesburg', icon: '🏙️', lat: -26.2041, lng: 28.0473,
-      season: 'Dry winter', tempRange: 'Highs 62-65°F · Lows 38-42°F',
-      typical: 'High altitude. Cold mornings, warm afternoons. Clear and dry.',
-      packFor: '', dayByDay: [], kidNote: ''
-    },
-    {
-      id: 'atlanta', name: 'Atlanta (layover)', icon: '✈️', lat: 33.7490, lng: -84.3880,
-      season: 'Late spring / early summer', tempRange: 'Highs 82-86°F · Lows 64-68°F',
-      typical: 'Warm and humid. Possible afternoon thunderstorms.',
-      packFor: '', dayByDay: [], kidNote: ''
-    }
-  ];
 
   const [calcZAR, setCalcZAR] = useState('');
   const [calcUSD, setCalcUSD] = useState('');
@@ -215,28 +159,28 @@ export default function TripApp() {
   const tipAmountUSD = calcZAR ? ((parseFloat(calcZAR) * tipPct / 100) / RATE).toFixed(2) : '0';
 
   const missions = [
-    { id: 'm1', daysBefore: 60, title: 'Book safari lodge (3 nights)', detail: 'Sabi Sabi, Lion Sands, MalaMala, Singita. Sells out for June.', category: 'critical' },
-    { id: 'm2', daysBefore: 60, title: 'Book CPT → JNB → HDS flights', detail: 'Or charter direct to lodge airstrip from JNB.', category: 'critical' },
-    { id: 'm3', daysBefore: 45, title: 'Book MIA → ATL flight (May 31)', detail: 'Must arrive ATL by 7pm to make 9pm Delta 210.', category: 'critical' },
-    { id: 'm4', daysBefore: 45, title: 'Book shark cage diving (June 8)', detail: 'Marine Dynamics or White Shark Projects. Confirm 12yo allowed.', category: 'critical' },
-    { id: 'm5', daysBefore: 42, title: 'Travel doctor appointment', detail: 'Malarone prescription. Vaccines current.', category: 'health' },
-    { id: 'm6', daysBefore: 30, title: 'Buy travel insurance', detail: 'Min $100k medical + $500k evacuation.', category: 'logistics' },
-    { id: 'm7', daysBefore: 30, title: 'Reserve Chefs Warehouse Beau Constantia', detail: 'June 10 dinner. Tasting menu, mountain views.', category: 'logistics' },
-    { id: 'm8', daysBefore: 21, title: 'Book Robben Island ferry (June 6)', detail: 'Morning departure - more reliable than afternoon.', category: 'logistics' },
-    { id: 'm9', daysBefore: 21, title: 'Reserve Cape Town rental car', detail: 'Specify AUTOMATIC. Full insurance. Pickup Jun 2, return Jun 11.', category: 'logistics' },
-    { id: 'm10', daysBefore: 21, title: 'Book Atlantis Dunes sandboarding', detail: 'June 9. Reserve boards in advance.', category: 'logistics' },
-    { id: 'm11', daysBefore: 14, title: 'Check both passports', detail: 'Valid 30+ days past return (June 15). 2 blank pages each.', category: 'critical' },
-    { id: 'm12', daysBefore: 14, title: 'Son\'s unabridged birth certificate', detail: 'Required for SA entry with minor. Notarized consent letter from mom.', category: 'critical' },
-    { id: 'm13', daysBefore: 14, title: 'Buy safari clothing', detail: 'Khaki/olive/brown. NO bright colors. NO blue (tsetse flies).', category: 'packing' },
-    { id: 'm14', daysBefore: 10, title: 'Notify banks of travel', detail: 'Or cards freeze. Both USA and South Africa.', category: 'logistics' },
-    { id: 'm15', daysBefore: 10, title: 'Get International Driving Permit', detail: 'AAA, $20. Required with US license in SA.', category: 'logistics' },
-    { id: 'm16', daysBefore: 7, title: 'Download offline content', detail: 'Netflix, Spotify, books, games. 14h flight!', category: 'packing' },
-    { id: 'm17', daysBefore: 7, title: 'Charge power banks', detail: '100% night before. Universal Type M adapter packed.', category: 'packing' },
-    { id: 'm18', daysBefore: 5, title: 'Start malaria meds', detail: 'Malarone: 1-2 days before Kruger arrival. Take with food.', category: 'health' },
-    { id: 'm19', daysBefore: 3, title: 'Confirm all reservations', detail: 'Hotel, all flights, shark dive, lodge pickup, Chefs Warehouse.', category: 'logistics' },
-    { id: 'm20', daysBefore: 2, title: 'Print all confirmations', detail: 'Phone dies. Paper doesn\'t. Keep in carry-on.', category: 'logistics' },
-    { id: 'm21', daysBefore: 1, title: 'Pack carry-on essentials', detail: 'Passports, meds, change of clothes, chargers, snacks.', category: 'packing' },
-    { id: 'm22', daysBefore: 0, title: 'DEPARTURE DAY', detail: 'Arrive MIA 2 hrs early. ATL platinum lounge before Delta 210.', category: 'critical' }
+    { id: 'm1', daysBefore: 60, title: 'Book safari lodge (3 nights)', detail: 'Sabi Sabi, MalaMala, Singita. Sells out for June.', category: 'critical' },
+    { id: 'm2', daysBefore: 60, title: 'Book CPT to JNB to HDS flights', detail: 'Or charter direct from JNB to lodge airstrip.', category: 'critical' },
+    { id: 'm3', daysBefore: 45, title: 'Book MIA to ATL flight (May 31)', detail: 'Must arrive ATL by 7pm to make Delta 210.', category: 'critical' },
+    { id: 'm4', daysBefore: 45, title: 'Book shark cage diving (June 8)', detail: 'Marine Dynamics or White Shark Projects.', category: 'critical' },
+    { id: 'm5', daysBefore: 42, title: 'Travel doctor', detail: 'Malarone prescription. Vaccines.', category: 'health' },
+    { id: 'm6', daysBefore: 30, title: 'Travel insurance', detail: 'Min $100k medical + $500k evacuation.', category: 'logistics' },
+    { id: 'm7', daysBefore: 30, title: 'Reserve Chefs Warehouse Beau Constantia', detail: 'June 10 dinner.', category: 'logistics' },
+    { id: 'm8', daysBefore: 21, title: 'Book Robben Island ferry (June 6)', detail: 'Morning departure.', category: 'logistics' },
+    { id: 'm9', daysBefore: 21, title: 'Reserve Cape Town rental car', detail: 'AUTOMATIC. Jun 2-11.', category: 'logistics' },
+    { id: 'm10', daysBefore: 21, title: 'Book Atlantis Dunes sandboarding', detail: 'June 9.', category: 'logistics' },
+    { id: 'm11', daysBefore: 14, title: 'Check passports', detail: 'Valid 30+ days past June 15. 2 blank pages.', category: 'critical' },
+    { id: 'm12', daysBefore: 14, title: 'Son birth certificate', detail: 'Unabridged. Notarized consent letter.', category: 'critical' },
+    { id: 'm13', daysBefore: 14, title: 'Buy safari clothing', detail: 'Khaki/olive/brown. NO bright colors.', category: 'packing' },
+    { id: 'm14', daysBefore: 10, title: 'Notify banks', detail: 'Or cards freeze.', category: 'logistics' },
+    { id: 'm15', daysBefore: 10, title: 'International Driving Permit', detail: 'AAA, $20.', category: 'logistics' },
+    { id: 'm16', daysBefore: 7, title: 'Download offline content', detail: '14h flight!', category: 'packing' },
+    { id: 'm17', daysBefore: 7, title: 'Charge power banks', detail: 'Type M adapter packed.', category: 'packing' },
+    { id: 'm18', daysBefore: 5, title: 'Start malaria meds', detail: 'Malarone with food.', category: 'health' },
+    { id: 'm19', daysBefore: 3, title: 'Confirm reservations', detail: 'All flights, lodge, dinners.', category: 'logistics' },
+    { id: 'm20', daysBefore: 2, title: 'Print confirmations', detail: 'Phone dies. Paper does not.', category: 'logistics' },
+    { id: 'm21', daysBefore: 1, title: 'Pack carry-on', detail: 'Passports, meds, change of clothes.', category: 'packing' },
+    { id: 'm22', daysBefore: 0, title: 'DEPARTURE DAY', detail: 'MIA 2 hrs early. ATL lounge.', category: 'critical' }
   ];
 
   const getDueMissions = () => {
@@ -244,7 +188,6 @@ export default function TripApp() {
     if (isDuringTrip) return [];
     return missions.filter(m => m.daysBefore >= daysUntil - 2 && m.daysBefore <= daysUntil + 2 && !missionProgress[m.id]);
   };
-
   const missionCategoryColor = (cat) => {
     if (cat === 'critical') return { bg: 'bg-rose-950', border: 'border-rose-800', text: 'text-rose-300', label: 'Critical' };
     if (cat === 'health') return { bg: 'bg-emerald-950', border: 'border-emerald-800', text: 'text-emerald-300', label: 'Health' };
@@ -253,118 +196,115 @@ export default function TripApp() {
   };
 
   const days = [
-    { num: 0, date: 'Sun, May 31', title: 'MIA → ATL', icon: '✈️', color: 'from-slate-700 to-slate-900', summary: 'Miami to Atlanta layover',
+    { num: 0, date: 'Sun, May 31', title: 'MIA to ATL', icon: '✈️', color: 'from-slate-700 to-slate-900', summary: 'Miami to Atlanta layover',
       sections: [
-        { title: 'Pre-flight', items: ['Confirm MIA→ATL flight booked','Arrive MIA 2 hrs early','Passports + birth certificate','Carry-on essentials only']},
-        { title: 'ATL layover', items: ['Land at ATL','Find Delta 210 gate','Platinum lounge access (use it)','Light dinner before 9pm boarding','9:00 PM: Delta 210 to Cape Town']}
+        { title: 'Pre-flight', items: ['Arrive MIA 2 hrs early', 'Passports + birth certificate', 'Carry-on essentials'] },
+        { title: 'ATL layover', items: ['Land at ATL', 'Find Delta 210 gate', 'Platinum lounge access', 'Light dinner', '9:00 PM: Delta 210 to Cape Town'] }
       ]},
     { num: 1, date: 'Mon, June 1', title: 'Fly to Cape Town', icon: '🛫', color: 'from-slate-800 to-slate-600', summary: 'Delta 210 overnight to CPT',
       sections: [
-        { title: 'On the plane', items: ['Business class — use the lie-flat','Hydrate aggressively','Melatonin after first meal','Set watch to SA time (6 hrs ahead)','Compression socks','Try to sleep 6+ hrs']},
-        { title: 'Entertainment for son', items: ['Download offline content beforehand','iPad with games + movies','Headphones','Light snacks']}
+        { title: 'On the plane', items: ['Business class lie-flat', 'Hydrate', 'Melatonin after first meal', 'Set watch to SA time (+6 hrs)', 'Try to sleep 6+ hrs'] },
+        { title: 'For son', items: ['Offline content downloaded', 'iPad games + movies', 'Headphones', 'Snacks'] }
       ]},
-    { num: 2, date: 'Tue, June 2', title: 'Arrive Cape Town', icon: '🏖️', color: 'from-orange-700 to-red-800', summary: 'Land 5:50pm, settle at Sunset Beach',
+    { num: 2, date: 'Tue, June 2', title: 'Arrive Cape Town', icon: '🏖️', color: 'from-orange-700 to-red-800', summary: 'Land 5:50pm',
       sections: [
-        { title: 'Arrival', items: ['Customs + immigration','Pick up rental car','Drive to 9 Soluta St (~25 min)','Unpack, settle in']},
-        { title: 'Low-key evening', items: ['Light dinner at home or Dash','Walk Sunset Beach','Bed early — jet lag is real']}
+        { title: 'Arrival', items: ['Customs', 'Pick up rental car', 'Drive to 9 Soluta St (~25 min)', 'Unpack'] },
+        { title: 'Evening', items: ['Light dinner', 'Walk Sunset Beach', 'Bed early'] }
       ]},
-    { num: 3, date: 'Wed, June 3', title: 'Beach + Recovery', icon: '🌅', color: 'from-amber-700 to-orange-800', summary: 'Slow first full day, recover from jet lag',
+    { num: 3, date: 'Wed, June 3', title: 'Beach + Recovery', icon: '🌅', color: 'from-amber-700 to-orange-800', summary: 'Slow first day',
       sections: [
-        { title: 'Easy morning', items: ['Sleep in','Coffee on the beach','Walk Sunset Beach with son']},
-        { title: 'Afternoon', items: ['Lunch at On The Rocks','Explore Milnerton','Stop by uncle\'s house to say hi']},
-        { title: 'Evening', items: ['Dinner at home','Game night','Early bed — big day tomorrow']}
+        { title: 'Easy day', items: ['Sleep in', 'Coffee on the beach', 'Walk Sunset Beach'] },
+        { title: 'Afternoon', items: ['Lunch at On The Rocks', 'Stop by uncle house'] },
+        { title: 'Evening', items: ['Dinner at home', 'Game night', 'Early bed'] }
       ]},
-    { num: 4, date: 'Thu, June 4', title: 'Table Mountain + V&A', icon: '⛰️', color: 'from-emerald-800 to-teal-900', summary: 'Cable car, aquarium, waterfront',
+    { num: 4, date: 'Thu, June 4', title: 'Table Mountain + V&A', icon: '⛰️', color: 'from-emerald-800 to-teal-900', summary: 'Cable car, aquarium',
       sections: [
-        { title: 'Morning: Table Mountain', items: ['Check cableway status 7 AM','Book online to skip line','2-3 hrs on top']},
-        { title: 'Afternoon: V&A', items: ['Lunch: Tiger\'s Milk','Two Oceans Aquarium','Dinner: Grand Africa Café']}
+        { title: 'Morning', items: ['Check cableway 7 AM', 'Book online', '2-3 hrs on top'] },
+        { title: 'Afternoon', items: ['Tiger Milk for lunch', 'Two Oceans Aquarium', 'Grand Africa Cafe dinner'] }
       ]},
-    { num: 5, date: 'Fri, June 5', title: 'Cape Point + Penguins', icon: '🐧', color: 'from-blue-900 to-indigo-900', summary: 'Chapman\'s Peak, Cape, Boulders',
+    { num: 5, date: 'Fri, June 5', title: 'Cape Point + Penguins', icon: '🐧', color: 'from-blue-900 to-indigo-900', summary: 'Chapman Peak, Boulders',
       sections: [
-        { title: 'Drive south', items: ['8:30 AM depart','Via Hout Bay','Coffee stop','Chapman\'s Peak Drive']},
-        { title: 'Cape Point', items: ['Funicular or hike to lighthouse','Sign photo','WINDOWS UP — baboons','Lunch: Two Oceans Restaurant']},
-        { title: 'Boulders', items: ['Penguin colony','Boardwalks','R180pp entrance']},
-        { title: 'Return', items: ['Via Kalk Bay','Dinner: Kalky\'s or Harbour House']}
+        { title: 'Drive south', items: ['8:30 AM depart', 'Via Hout Bay', 'Chapman Peak Drive'] },
+        { title: 'Cape Point', items: ['Funicular or hike', 'WINDOWS UP - baboons', 'Two Oceans Restaurant lunch'] },
+        { title: 'Boulders', items: ['Penguin colony', 'Boardwalks', 'R180pp'] }
       ]},
-    { num: 6, date: 'Sat, June 6', title: 'Robben Island + Bo-Kaap', icon: '🏛️', color: 'from-purple-900 to-slate-800', summary: 'Mandela\'s prison, Cape Malay quarter',
+    { num: 6, date: 'Sat, June 6', title: 'Robben Island + Bo-Kaap', icon: '🏛️', color: 'from-purple-900 to-slate-800', summary: 'Mandela prison',
       sections: [
-        { title: 'Robben Island', items: ['Ferry from V&A (book ahead)','3.5 hrs total','Ex-prisoners as guides']},
-        { title: 'Bo-Kaap', items: ['Lunch: Bo-Kaap Kombuis','Painted streets photo walk','Cape Malay history']},
-        { title: 'Sunset', items: ['Camps Bay','The Bungalow for sundowners']}
+        { title: 'Robben Island', items: ['Ferry from V&A', '3.5 hrs', 'Ex-prisoners as guides'] },
+        { title: 'Bo-Kaap', items: ['Bo-Kaap Kombuis lunch', 'Painted streets'] },
+        { title: 'Sunset', items: ['Camps Bay', 'The Bungalow'] }
       ]},
-    { num: 7, date: 'Sun, June 7', title: 'Family Braai Day', icon: '🔥', color: 'from-amber-800 to-orange-900', summary: 'Braai with uncle and cousins',
+    { num: 7, date: 'Sun, June 7', title: 'Family Braai', icon: '🔥', color: 'from-amber-800 to-orange-900', summary: 'Braai with family',
       sections: [
-        { title: 'Morning', items: ['Sleep in','Pick n Pay run for braai supplies']},
-        { title: 'Braai', items: ['Uncle\'s braai','Cousins meet your son','Boerewors, lamb chops, pap','Stay late']},
-        { title: 'Wind-down', items: ['Easy walk on the beach','Early bed']}
+        { title: 'Morning', items: ['Sleep in', 'Pick n Pay run'] },
+        { title: 'Braai', items: ['Uncle braai', 'Cousins meet son', 'Boerewors, lamb chops'] },
+        { title: 'Wind-down', items: ['Beach walk', 'Early bed'] }
       ]},
     { num: 8, date: 'Mon, June 8', title: 'Shark Cage Diving', icon: '🦈', color: 'from-cyan-900 to-blue-950', summary: 'Gansbaai great whites',
       sections: [
-        { title: 'Adventure', items: ['Drive to Gansbaai (2 hrs)','Marine Dynamics or White Shark Projects','Confirm 12yo allowed when booking','Wetsuit + cage = 6ft from sharks']},
-        { title: 'Bring', items: ['Seasickness meds BEFORE boarding','Light breakfast only','Warm clothes for after','Towel + change','GoPro']},
-        { title: 'Return', items: ['Hermanus Cliff Path detour','Dinner back in Cape Town']}
+        { title: 'Adventure', items: ['Drive to Gansbaai (2 hrs)', 'Marine Dynamics', 'Confirm 12yo allowed'] },
+        { title: 'Bring', items: ['Seasickness meds BEFORE', 'Light breakfast only', 'Warm clothes', 'GoPro'] },
+        { title: 'Return', items: ['Hermanus detour', 'Dinner back in Cape Town'] }
       ]},
-    { num: 9, date: 'Tue, June 9', title: 'Atlantis Dunes', icon: '🏜️', color: 'from-yellow-700 to-amber-900', summary: 'Sandboarding adventure',
+    { num: 9, date: 'Tue, June 9', title: 'Atlantis Dunes', icon: '🏜️', color: 'from-yellow-700 to-amber-900', summary: 'Sandboarding',
       sections: [
-        { title: 'Morning: Sandboarding', items: ['Drive to Atlantis Dunes (~40 min)','Book sandboard rental in advance','Wear closed shoes — sand is everywhere','Goggles or sunglasses essential']},
-        { title: 'On the dunes', items: ['Beginner runs first','Take video — son will love this','Stay hydrated','2-3 hrs is plenty']},
-        { title: 'Afternoon', items: ['Lunch nearby','Back to Sunset Beach','Pool time or beach walk','Wash sand out of EVERYTHING']}
+        { title: 'Morning', items: ['Drive to Atlantis (~40 min)', 'Sandboard rental', 'Closed shoes', 'Goggles essential'] },
+        { title: 'On dunes', items: ['Beginner runs first', 'Take video', 'Hydrate', '2-3 hrs'] },
+        { title: 'Afternoon', items: ['Lunch nearby', 'Back to Sunset Beach', 'Wash sand out of everything'] }
       ]},
-    { num: 10, date: 'Wed, June 10', title: 'Adventure Day', icon: '🏔️', color: 'from-rose-900 to-orange-800', summary: 'Lion\'s Head sunrise + Chefs Warehouse dinner',
+    { num: 10, date: 'Wed, June 10', title: 'Lions Head + Chefs Warehouse', icon: '🏔️', color: 'from-rose-900 to-orange-800', summary: 'Sunrise hike + dinner',
       sections: [
-        { title: 'Lion\'s Head sunrise', items: ['5:15 AM depart','2hr round trip','Chains section near top','Sunrise from summit','Coffee on way home']},
-        { title: 'Recovery', items: ['Big breakfast','Nap','Sea Point Promenade walk']},
-        { title: 'Dinner', items: ['Chefs Warehouse Beau Constantia','RESERVATIONS REQUIRED','Tasting menu, mountain views','Dress smart-casual']}
+        { title: 'Sunrise hike', items: ['5:15 AM depart', '2hr round trip', 'Chains near top', 'Coffee on way home'] },
+        { title: 'Recovery', items: ['Big breakfast', 'Nap', 'Sea Point Promenade'] },
+        { title: 'Dinner', items: ['Chefs Warehouse Beau Constantia', 'RESERVATIONS', 'Smart-casual'] }
       ]},
-    { num: 11, date: 'Thu, June 11', title: 'CPT → JNB → Kruger', icon: '🦒', color: 'from-yellow-800 to-amber-900', summary: 'Travel to safari lodge',
+    { num: 11, date: 'Thu, June 11', title: 'CPT to JNB to Kruger', icon: '🦒', color: 'from-yellow-800 to-amber-900', summary: 'Travel to safari',
       sections: [
-        { title: 'Pack out', items: ['Pack safari clothes (NEUTRAL colors only)','Warm jacket on top — Kruger mornings cold','Drop rental car at CPT','Soft-sided bag preferred for puddle-jumper']},
-        { title: 'Flights', items: ['CPT → JNB (~2 hrs)','Connect at JNB','JNB → HDS or direct charter to lodge','Lodge transfer from airstrip']},
-        { title: 'Arrival', items: ['Welcome drink','Lodge orientation','First sunset drive!','Boma dinner']}
+        { title: 'Pack out', items: ['Safari neutrals', 'Warm jacket on top', 'Drop rental car at CPT'] },
+        { title: 'Flights', items: ['CPT to JNB', 'Connect at JNB', 'JNB to HDS or charter', 'Lodge transfer'] },
+        { title: 'Arrival', items: ['Welcome drink', 'Lodge orientation', 'First sunset drive', 'Boma dinner'] }
       ]},
     { num: 12, date: 'Fri, June 12', title: 'Kruger Day 2', icon: '🦁', color: 'from-yellow-900 to-orange-900', summary: 'Full safari rhythm',
       sections: [
-        { title: 'Morning', items: ['5:30 AM coffee + rusks','6:00 AM game drive (3-4 hrs)','9:30 AM bush breakfast','Mid-morning rest']},
-        { title: 'Afternoon', items: ['12:30 brunch','Pool / nap / read','Optional bush walk if available']},
-        { title: 'Evening', items: ['4:00 PM sunset drive (3-4 hrs)','Sundowner stop in the bush','7:30 PM boma dinner under stars']}
+        { title: 'Morning', items: ['5:30 AM coffee', '6 AM game drive', '9:30 AM bush breakfast'] },
+        { title: 'Afternoon', items: ['12:30 brunch', 'Pool / nap', 'Optional bush walk'] },
+        { title: 'Evening', items: ['4 PM sunset drive', 'Sundowners in bush', '7:30 boma dinner'] }
       ]},
-    { num: 13, date: 'Sat, June 13', title: 'Kruger Day 3', icon: '🐆', color: 'from-stone-800 to-amber-950', summary: 'Final full safari day',
+    { num: 13, date: 'Sat, June 13', title: 'Kruger Day 3', icon: '🐆', color: 'from-stone-800 to-amber-950', summary: 'Final safari day',
       sections: [
-        { title: 'Activities', items: ['Morning drive (push for leopard if missing)','Optional bush walk with armed ranger','Spa or pool downtime']},
-        { title: 'Sunset drive', items: ['Last drive of the trip','Soak it in','Big farewell dinner']},
-        { title: 'Tipping (cash ZAR)', items: ['Ranger: R250-300/day','Tracker: R150-200/day','General staff: R100/day','Have envelopes ready']}
+        { title: 'Activities', items: ['Morning drive', 'Optional bush walk', 'Spa or pool'] },
+        { title: 'Sunset', items: ['Last drive', 'Big farewell dinner'] },
+        { title: 'Tipping (cash)', items: ['Ranger R250-300/day', 'Tracker R150-200/day', 'Staff R100/day'] }
       ]},
-    { num: 14, date: 'Sun, June 14', title: 'Kruger → JNB → ATL', icon: '🛬', color: 'from-indigo-900 to-slate-900', summary: 'Final drive, then long flight home',
+    { num: 14, date: 'Sun, June 14', title: 'Kruger to JNB to ATL', icon: '🛬', color: 'from-indigo-900 to-slate-900', summary: 'Final drive + Delta 201',
       sections: [
-        { title: 'Morning', items: ['Final game drive','Farewell breakfast','Lodge transfer to airstrip']},
-        { title: 'JNB connection', items: ['Fly to JNB','Long layover','Delta lounge if available','Dinner before boarding']},
-        { title: 'Delta 201', items: ['9:55 PM departure','Business class — sleep!','14h 19m to ATL']}
+        { title: 'Morning', items: ['Final game drive', 'Farewell breakfast', 'Lodge transfer'] },
+        { title: 'JNB', items: ['Long layover', 'Delta lounge', 'Dinner before boarding'] },
+        { title: 'Delta 201', items: ['9:55 PM departure', 'Business class - sleep', '14h 19m to ATL'] }
       ]},
-    { num: 15, date: 'Mon, June 15', title: 'ATL → MIA → Home', icon: '🏠', color: 'from-slate-700 to-slate-900', summary: 'Land ATL 8:20am, MIA by 1:04pm',
+    { num: 15, date: 'Mon, June 15', title: 'ATL to MIA to Home', icon: '🏠', color: 'from-slate-700 to-slate-900', summary: 'Land 8:20am, home 1:04pm',
       sections: [
-        { title: 'Arrival ATL', items: ['Land 8:20 AM','Customs + immigration','Recheck bags if needed','Breakfast in lounge']},
-        { title: 'Final flight', items: ['Delta 1332 — 11:00 AM','First class','Land MIA 1:04 PM']},
-        { title: 'Home', items: ['Pickup or rideshare','Unpack at your pace','Print favorite photos','Plan next trip 😉']}
+        { title: 'Arrival ATL', items: ['Land 8:20 AM', 'Customs', 'Recheck bags', 'Lounge breakfast'] },
+        { title: 'Final flight', items: ['Delta 1332 - 11:00 AM', 'First class', 'Land MIA 1:04 PM'] },
+        { title: 'Home', items: ['Pickup or rideshare', 'Unpack', 'Print favorite photos'] }
       ]}
   ];
 
   const packingCategories = {
-    'Documents (carry-on)': { phase: 'all', items: ['Both passports','Son\'s birth certificate (unabridged)','Notarized consent letter (if mom not coming)','Delta confirmations + boarding passes','Travel insurance','Lodge confirmation','International Driving Permit','Cards + cash (USD + ZAR)'] },
-    'Health & meds': { phase: 'all', items: ['Malarone (start 2 days before Kruger)','Melatonin','Seasickness tablets (shark dive)','Sunscreen SPF 50+','DEET 30%+','First aid kit','Prescriptions in original bottles'] },
-    'Cape Town clothes (9 days)': { phase: 'capetown', items: ['Warm jacket','Rain shell','Fleece','Long sleeve layers (3-4)','Jeans + warm pants','Closed walking shoes','Smart-casual outfit (Chefs Warehouse)','Swimsuit (just in case)','Beanie + gloves'] },
-    'Adventure gear': { phase: 'capetown', items: ['Quick-dry shorts (sandboarding)','Closed shoes for dunes','Goggles or sunglasses','GoPro mount','Towel for shark dive','Change of clothes for after diving'] },
-    'Safari (NEUTRALS only)': { phase: 'kruger', items: ['Khaki/olive/brown shirts (3-4)','Convertible safari pants','Insulated jacket','Fleece mid-layer','Thermal base layer','Beanie + gloves + buff','Closed walking shoes','Wide-brim hat','Binoculars (yours and son\'s)'] },
-    'Tech': { phase: 'all', items: ['Universal adapter (Type M for SA)','Battery pack (10000mAh+)','Camera + extra SD cards','Phone chargers','Headphones (good ones for flight)','iPad with offline downloads','GoPro + accessories'] },
-    'For your son': { phase: 'all', items: ['Books / Kindle','Small backpack','Favorite snacks (US ones, can\'t get there)','Journal + pen','Offline games on iPad','Headphones (his own)','Comfort item (if applicable)'] }
+    'Documents (carry-on)': { phase: 'all', items: ['Both passports', 'Son birth certificate (unabridged)', 'Notarized consent letter', 'Delta confirmations', 'Travel insurance', 'Lodge confirmation', 'IDP', 'Cards + cash (USD + ZAR)'] },
+    'Health & meds': { phase: 'all', items: ['Malarone', 'Melatonin', 'Seasickness tablets', 'SPF 50+', 'DEET 30%+', 'First aid kit', 'Prescriptions'] },
+    'Cape Town (9 days)': { phase: 'capetown', items: ['Warm jacket', 'Rain shell', 'Fleece', 'Long sleeves (3-4)', 'Jeans + warm pants', 'Closed shoes', 'Smart-casual outfit', 'Beanie + gloves'] },
+    'Adventure gear': { phase: 'capetown', items: ['Quick-dry shorts', 'Closed shoes for dunes', 'Goggles', 'GoPro mount', 'Towel', 'Change of clothes'] },
+    'Safari (NEUTRALS only)': { phase: 'kruger', items: ['Khaki/olive shirts (3-4)', 'Convertible pants', 'Insulated jacket', 'Fleece mid-layer', 'Thermal base', 'Beanie + gloves + buff', 'Walking shoes', 'Wide-brim hat', 'Binoculars'] },
+    'Tech': { phase: 'all', items: ['Universal adapter (Type M)', 'Battery pack 10000mAh+', 'Camera + SD cards', 'Chargers', 'Headphones', 'iPad with offline', 'GoPro'] },
+    'For son': { phase: 'all', items: ['Books / Kindle', 'Backpack', 'Snacks', 'Journal + pen', 'Offline games', 'Headphones', 'Comfort item'] }
   };
-
   const filteredPackingList = () => {
     if (packingFilter === 'all') return packingCategories;
     const out = {};
     Object.entries(packingCategories).forEach(([cat, obj]) => { if (obj.phase === 'all' || obj.phase === packingFilter) out[cat] = obj; });
     return out;
   };
-
   const packingFilters = [
     { id: 'all', label: 'Everything' },
     { id: 'capetown', label: '🏖️ Cape Town' },
@@ -372,27 +312,32 @@ export default function TripApp() {
   ];
 
   const bookings = [
-    { id: 'b1', task: 'Book MIA → ATL flight (May 31)', urgent: true },
-    { id: 'b2', task: 'Book ATL → CPT - DONE (DL210, June 1)', urgent: true },
-    { id: 'b3', task: 'Book CPT → JNB → HDS (June 11)', urgent: true },
-    { id: 'b4', task: 'Book safari lodge (3 nights, June 11-14)', urgent: true },
-    { id: 'b5', task: 'Book JNB → ATL - DONE (DL201, June 14)', urgent: true },
-    { id: 'b6', task: 'Book ATL → MIA - DONE (DL1332, June 15)', urgent: true },
+    { id: 'b1', task: 'Book MIA to ATL flight (May 31)', urgent: true },
+    { id: 'b2', task: 'ATL to CPT - DONE (DL210)', urgent: true },
+    { id: 'b3', task: 'Book CPT to JNB to HDS (June 11)', urgent: true },
+    { id: 'b4', task: 'Book safari lodge (3 nights)', urgent: true },
+    { id: 'b5', task: 'JNB to ATL - DONE (DL201)', urgent: true },
+    { id: 'b6', task: 'ATL to MIA - DONE (DL1332)', urgent: true },
     { id: 'b7', task: 'Book shark cage diving (June 8)', urgent: true },
     { id: 'b8', task: 'Travel doctor (malaria meds)', urgent: true },
     { id: 'b9', task: 'Book Robben Island ferry (June 6)', urgent: false },
     { id: 'b10', task: 'Book Table Mountain Cableway', urgent: false },
-    { id: 'b11', task: 'Reserve Chefs Warehouse Beau Constantia (June 10)', urgent: false },
-    { id: 'b12', task: 'Book Atlantis Dunes sandboarding (June 9)', urgent: false },
+    { id: 'b11', task: 'Reserve Chefs Warehouse (June 10)', urgent: false },
+    { id: 'b12', task: 'Book Atlantis Dunes sandboarding', urgent: false },
     { id: 'b13', task: 'Rental car Cape Town (Jun 2-11)', urgent: false },
     { id: 'b14', task: 'Travel insurance', urgent: false }
   ];
 
+  const flightSlots = [
+    { id: 'f1', label: 'MIA → ATL', route: 'Miami to Atlanta', date: 'May 31', preset: { airline: '', number: '', depart: 'MIA TBD', arrive: 'ATL TBD', confirmation: '' } },
+    { id: 'f2', label: 'ATL → CPT', route: 'Atlanta to Cape Town', date: 'June 1', preset: { airline: 'Delta', number: 'DL210', depart: 'ATL 9:00 PM', arrive: 'CPT 5:50 PM (+1)', confirmation: '' } },
+    { id: 'f3', label: 'CPT → JNB → HDS', route: 'Cape Town to Kruger', date: 'June 11', preset: { airline: '', number: '', depart: 'CPT TBD', arrive: 'HDS TBD', confirmation: '' } },
+    { id: 'f4', label: 'JNB → ATL', route: 'Joburg to Atlanta', date: 'June 14', preset: { airline: 'Delta', number: 'DL201', depart: 'JNB 9:55 PM', arrive: 'ATL 8:20 AM (+1)', confirmation: '' } },
+    { id: 'f5', label: 'ATL → MIA', route: 'Atlanta to Miami', date: 'June 15', preset: { airline: 'Delta', number: 'DL1332', depart: 'ATL 11:00 AM', arrive: 'MIA 1:04 PM', confirmation: '' } }
+  ];
+  const getFlightTrackUrl = (n) => n ? `https://www.google.com/search?q=${encodeURIComponent(n + ' flight status')}` : null;
+
   const emergencyByLocation = {
-    usa: { label: 'USA', contacts: [
-      { label: 'Emergency', value: '911', call: '911', urgent: true },
-      { label: 'US Passport Help', value: '+1 877-487-2778', call: '+18774872778' }
-    ]},
     capeTown: { label: 'Cape Town', contacts: [
       { label: 'Emergency (mobile)', value: '112', call: '112', urgent: true },
       { label: 'Police', value: '10111', call: '10111', urgent: true },
@@ -431,31 +376,31 @@ export default function TripApp() {
   ];
 
   const bigFiveAnimals = [
-    { key: 'lion', emoji: '🦁', name: 'Lion', fact: 'Females hunt.' },
-    { key: 'leopard', emoji: '🐆', name: 'Leopard', fact: 'Look up — they sleep in trees.' },
-    { key: 'elephant', emoji: '🐘', name: 'Elephant', fact: 'Smell water 20km away.' },
-    { key: 'rhino', emoji: '🦏', name: 'Rhino', fact: 'Poor eyesight, great hearing.' },
-    { key: 'buffalo', emoji: '🐃', name: 'Buffalo', fact: 'Most dangerous when cornered.' }
+    { key: 'lion', emoji: '🦁', name: 'Lion' },
+    { key: 'leopard', emoji: '🐆', name: 'Leopard' },
+    { key: 'elephant', emoji: '🐘', name: 'Elephant' },
+    { key: 'rhino', emoji: '🦏', name: 'Rhino' },
+    { key: 'buffalo', emoji: '🐃', name: 'Buffalo' }
   ];
   const bonusAnimals = [
-    { key: 'cheetah', emoji: '🐈', name: 'Cheetah', fact: '0-100 km/h in 3 sec.' },
-    { key: 'giraffe', emoji: '🦒', name: 'Giraffe', fact: '11kg heart.' },
-    { key: 'zebra', emoji: '🦓', name: 'Zebra', fact: 'Unique stripe patterns.' },
-    { key: 'hippo', emoji: '🦛', name: 'Hippo', fact: 'Most human kills in Africa.' }
+    { key: 'cheetah', emoji: '🐈', name: 'Cheetah' },
+    { key: 'giraffe', emoji: '🦒', name: 'Giraffe' },
+    { key: 'zebra', emoji: '🦓', name: 'Zebra' },
+    { key: 'hippo', emoji: '🦛', name: 'Hippo' }
   ];
 
   const locations = [
-    { id: 'momshouse', name: "Mom's House", address: '9 Soluta Street, Sunset Beach, Milnerton', category: 'home', icon: '🏠', notes: 'Base camp.' },
-    { id: 'mia', name: 'Miami International (MIA)', address: '2100 NW 42nd Ave, Miami, FL', category: 'airport', icon: '✈️' },
+    { id: 'momshouse', name: 'Mom House', address: '9 Soluta Street, Sunset Beach, Milnerton', category: 'home', icon: '🏠' },
+    { id: 'mia', name: 'Miami International (MIA)', address: 'Miami, FL', category: 'airport', icon: '✈️' },
     { id: 'atl', name: 'Atlanta Hartsfield (ATL)', address: 'Atlanta, GA', category: 'airport', icon: '✈️' },
     { id: 'cpt', name: 'Cape Town Airport (CPT)', address: 'Cape Town', category: 'airport', icon: '✈️' },
     { id: 'tablemtn', name: 'Table Mountain', address: 'Tafelberg Rd, Cape Town', category: 'attraction', icon: '⛰️' },
     { id: 'vanda', name: 'V&A Waterfront', address: 'Cape Town', category: 'attraction', icon: '⚓' },
     { id: 'capepoint', name: 'Cape of Good Hope', address: 'Cape Point', category: 'attraction', icon: '🌊' },
-    { id: 'boulders', name: 'Boulders Penguins', address: 'Simon\'s Town', category: 'attraction', icon: '🐧' },
+    { id: 'boulders', name: 'Boulders Penguins', address: 'Simon Town', category: 'attraction', icon: '🐧' },
     { id: 'gansbaai', name: 'Gansbaai (sharks)', address: 'Kleinbaai Harbour', category: 'attraction', icon: '🦈' },
     { id: 'atlantisdunes', name: 'Atlantis Dunes', address: 'Atlantis, Western Cape', category: 'attraction', icon: '🏜️' },
-    { id: 'lionshead', name: "Lion's Head", address: 'Signal Hill Rd, Cape Town', category: 'attraction', icon: '🏔️' },
+    { id: 'lionshead', name: 'Lions Head', address: 'Signal Hill Rd, Cape Town', category: 'attraction', icon: '🏔️' },
     { id: 'chefswarehouse', name: 'Chefs Warehouse Beau Constantia', address: 'Constantia, Cape Town', category: 'dining', icon: '🍷' },
     { id: 'robben', name: 'Robben Island Ferry', address: 'V&A Waterfront', category: 'attraction', icon: '🏛️' },
     { id: 'bokaap', name: 'Bo-Kaap', address: 'Cape Town', category: 'attraction', icon: '🎨' },
@@ -465,7 +410,6 @@ export default function TripApp() {
   const locationCategories = [
     { id: 'all', label: 'All' },
     { id: 'airport', label: 'Airports' },
-    { id: 'hotel', label: 'Hotels' },
     { id: 'dining', label: 'Dining' },
     { id: 'attraction', label: 'Attractions' }
   ];
@@ -475,15 +419,6 @@ export default function TripApp() {
     if (iOS) { window.open(`maps://?q=${q}`, '_system'); setTimeout(() => window.open(`https://maps.apple.com/?q=${q}`, '_blank'), 100); }
     else window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
   };
-
-  const flightSlots = [
-    { id: 'f1', label: 'MIA → ATL', route: 'Miami to Atlanta', date: 'May 31', preset: { airline: '', number: '', depart: 'MIA TBD', arrive: 'ATL TBD', confirmation: '' } },
-    { id: 'f2', label: 'ATL → CPT', route: 'Atlanta to Cape Town', date: 'June 1', preset: { airline: 'Delta', number: 'DL210', depart: 'ATL 9:00 PM', arrive: 'CPT 5:50 PM (+1)', confirmation: '' } },
-    { id: 'f3', label: 'CPT → JNB → HDS', route: 'Cape Town to Kruger', date: 'June 11', preset: { airline: '', number: '', depart: 'CPT TBD', arrive: 'HDS TBD', confirmation: '' } },
-    { id: 'f4', label: 'HDS → JNB → ATL', route: 'Kruger to Atlanta', date: 'June 14', preset: { airline: 'Delta', number: 'DL201', depart: 'JNB 9:55 PM', arrive: 'ATL 8:20 AM (+1)', confirmation: '' } },
-    { id: 'f5', label: 'ATL → MIA', route: 'Atlanta to Miami', date: 'June 15', preset: { airline: 'Delta', number: 'DL1332', depart: 'ATL 11:00 AM', arrive: 'MIA 1:04 PM', confirmation: '' } }
-  ];
-  const getFlightTrackUrl = (n) => n ? `https://www.google.com/search?q=${encodeURIComponent(n + ' flight status')}` : null;
 
   const TABS = [
     { id: 'home', label: 'Home', icon: Home },
@@ -499,7 +434,7 @@ export default function TripApp() {
   const packingChecked = Object.entries(pkgList).flatMap(([cat, obj]) => obj.items.map((_, i) => `pack-${cat}-${i}`)).filter(id => checkedItems[id]).length;
   const bigFiveSeen = bigFiveAnimals.filter(a => bigFive[a.key]).length;
   const bonusSeen = bonusAnimals.filter(a => bigFive[a.key]).length;
-  const currentDay = tripDayIndex !== null ? days[tripDayIndex] : null;
+  const currentDay = (tripDayIndex !== null && tripDayIndex < days.length) ? days[tripDayIndex] : null;
   const dueMissions = getDueMissions();
   const missionsCompleted = missions.filter(m => missionProgress[m.id]).length;
   const journalEntriesCount = Object.keys(journal).length;
@@ -511,32 +446,27 @@ export default function TripApp() {
     const loc = weatherLocations.find(w => w.id === locId);
     if (!loc) return null;
     const cached = weatherCache[locId];
-    const live = cached?.live;
-    const dayMatch = loc.dayByDay?.find(d => currentDay.date.includes(d.date.split(',').pop().trim()));
-    return { location: loc.name, tempRange: loc.tempRange, dayForecast: dayMatch?.forecast, typical: loc.typical, locRef: loc, live };
+    return { location: loc.name, tempRange: loc.tempRange, locRef: loc, live: cached?.live };
   };
   const todaysWeather = getTodaysWeather();
 
   const getTodaysReservations = () => {
     if (!currentDay) return [];
-    const kw = { 4: ['Table Mountain'], 6: ['Robben'], 8: ['shark'], 9: ['Atlantis'], 10: ['Chefs'], 11: ['lodge','HDS'] }[currentDay.num] || [];
+    const kw = { 4: ['Table Mountain'], 6: ['Robben'], 8: ['shark'], 9: ['Atlantis'], 10: ['Chefs'], 11: ['lodge', 'HDS'] }[currentDay.num] || [];
     return Object.values(reservations).filter(r => kw.some(k => r.task?.toLowerCase().includes(k.toLowerCase())));
   };
   const todaysRez = getTodaysReservations();
 
   const generateShareText = () => {
-    let text = `🌍 Dan & son trip schedule\nMay 31 – June 15, 2026\n\n`;
-    days.forEach(d => { text += `📅 ${d.date}\n${d.icon} ${d.title}\n${d.summary}\n\n`; });
-    text += `🏠 Mom's house: 9 Soluta Street, Sunset Beach, Milnerton\n`;
+    let text = `Dan & son trip schedule\nMay 31 - June 15, 2026\n\n`;
+    days.forEach(d => { text += `${d.date}\n${d.title}\n${d.summary}\n\n`; });
+    text += `Mom house: 9 Soluta Street, Sunset Beach, Milnerton\n`;
     return text;
   };
   const copyShareText = async () => {
     try { await navigator.clipboard.writeText(generateShareText()); setCopiedShare(true); setTimeout(() => setCopiedShare(false), 2000); } catch (e) {}
   };
 
-  // ============================================================
-  // KID MODE
-  // ============================================================
   if (kidMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 text-white pb-20" style={{ fontFamily: 'ui-rounded, system-ui, sans-serif' }}>
@@ -552,7 +482,7 @@ export default function TripApp() {
         <div className="px-4 mb-6">
           <div className="bg-black bg-opacity-30 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-bold">🏆 Big Five Hunt</div>
+              <div className="text-lg font-bold">Big Five Hunt</div>
               <div className="text-xl font-bold text-amber-300">{bigFiveSeen}/5</div>
             </div>
             <div className="grid grid-cols-5 gap-2">
@@ -565,7 +495,7 @@ export default function TripApp() {
         <div className="px-4 mb-6">
           <div className="bg-black bg-opacity-30 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-bold">✨ Bonus</div>
+              <div className="text-lg font-bold">Bonus</div>
               <div className="text-xl font-bold text-amber-300">{bonusSeen}/{bonusAnimals.length}</div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -578,15 +508,12 @@ export default function TripApp() {
           </div>
         </div>
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50 backdrop-blur">
-          <button onClick={() => setKidMode(false)} className="w-full bg-white text-purple-900 rounded-full py-3 font-bold">Back to Dad&apos;s App</button>
+          <button onClick={() => setKidMode(false)} className="w-full bg-white text-purple-900 rounded-full py-3 font-bold">Back to Dad App</button>
         </div>
       </div>
     );
   }
 
-  // ============================================================
-  // MAIN APP
-  // ============================================================
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 pb-20" style={{ fontFamily: 'ui-serif, Georgia, serif' }}>
       {activeTab === 'home' && (
@@ -631,7 +558,7 @@ export default function TripApp() {
             <div className="px-4 py-4">
               <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-stone-900 rounded-xl border border-emerald-700 overflow-hidden">
                 <div className="px-5 pt-4 pb-3">
-                  <div className="text-xs tracking-widest uppercase text-emerald-300 font-sans font-semibold mb-2">Today's Briefing</div>
+                  <div className="text-xs tracking-widest uppercase text-emerald-300 font-sans font-semibold mb-2">Today Briefing</div>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="text-3xl">{currentDay.icon}</div>
                     <div><div className="text-xl font-bold text-stone-50">{currentDay.title}</div><div className="text-sm text-stone-300 font-sans opacity-80">{currentDay.summary}</div></div>
@@ -645,23 +572,20 @@ export default function TripApp() {
                     </div>
                     {todaysWeather.live ? (
                       <div className="flex items-center gap-3">
-                        <div className="text-3xl">{weatherCodeToEmoji(todaysWeather.live.current.weather_code)}</div>
+                        <div className="text-3xl">{wEmoji(todaysWeather.live.current.weather_code)}</div>
                         <div>
-                          <div className="text-lg font-bold text-stone-50">{Math.round(todaysWeather.live.current.temperature_2m)}°F · {weatherCodeToText(todaysWeather.live.current.weather_code)}</div>
-                          <div className="text-xs text-stone-400 font-sans">H {Math.round(todaysWeather.live.daily.temperature_2m_max[0])}° / L {Math.round(todaysWeather.live.daily.temperature_2m_min[0])}° · 💨 {Math.round(todaysWeather.live.current.wind_speed_10m)} mph</div>
+                          <div className="text-lg font-bold text-stone-50">{Math.round(todaysWeather.live.current.temperature_2m)}°F · {wText(todaysWeather.live.current.weather_code)}</div>
+                          <div className="text-xs text-stone-400 font-sans">H {Math.round(todaysWeather.live.daily.temperature_2m_max[0])}° / L {Math.round(todaysWeather.live.daily.temperature_2m_min[0])}° · {Math.round(todaysWeather.live.current.wind_speed_10m)} mph</div>
                         </div>
                       </div>
                     ) : (
-                      <>
-                        <div className="text-sm text-stone-100 font-sans font-semibold">{todaysWeather.tempRange}</div>
-                        {todaysWeather.dayForecast && <div className="text-xs text-stone-300 font-sans mt-1 leading-relaxed">{todaysWeather.dayForecast}</div>}
-                      </>
+                      <div className="text-sm text-stone-100 font-sans">{todaysWeather.tempRange}</div>
                     )}
                   </div>
                 )}
                 <div className="flex border-t border-emerald-600">
                   <button onClick={() => { setActiveTab('itinerary'); setExpandedDay(currentDay.num); }} className="flex-1 bg-emerald-700 text-white py-3 text-sm font-sans font-semibold">Open plan</button>
-                  <button onClick={() => setShowJournalEdit({ dayNum: currentDay.num, ...(journal[currentDay.num] || {}) })} className="flex-1 bg-emerald-800 text-white py-3 text-sm font-sans font-semibold border-l border-emerald-600">📔 Journal today</button>
+                  <button onClick={() => setShowJournalEdit({ dayNum: currentDay.num, ...(journal[currentDay.num] || {}) })} className="flex-1 bg-emerald-800 text-white py-3 text-sm font-sans font-semibold border-l border-emerald-600">Journal today</button>
                 </div>
               </div>
             </div>
@@ -709,7 +633,7 @@ export default function TripApp() {
                         <div className="text-xs text-white font-sans opacity-70 flex items-center gap-2">
                           {day.date}
                           {isToday && <span className="bg-emerald-500 text-white px-1.5 rounded text-[10px] font-bold uppercase">Today</span>}
-                          {hasJournal && <span className="bg-indigo-500 text-white px-1.5 rounded text-[10px] font-bold uppercase">📔</span>}
+                          {hasJournal && <span className="bg-indigo-500 text-white px-1.5 rounded text-[10px] font-bold uppercase">Journal</span>}
                         </div>
                         <div className="font-bold text-white text-lg truncate">{day.title}</div>
                       </div>
@@ -822,7 +746,7 @@ export default function TripApp() {
                               <div className="mt-2 pt-2 border-t border-stone-800 space-y-1 text-xs font-sans">
                                 {r.confirmation && <div className="text-amber-300">Conf: <span className="font-mono">{r.confirmation}</span></div>}
                                 {r.phone && <a href={`tel:${r.phone.replace(/\s/g,'')}`} className="text-emerald-400 flex items-center gap-1"><Phone size={10} /> {r.phone}</a>}
-                                {r.date && <div className="text-stone-400">📅 {r.date}</div>}
+                                {r.date && <div className="text-stone-400">{r.date}</div>}
                                 {r.notes && <div className="text-stone-400 italic">{r.notes}</div>}
                               </div>
                             )}
@@ -857,7 +781,7 @@ export default function TripApp() {
               { onClick: () => setShowWeather(true), icon: <Cloud size={22} className="text-sky-400" />, title: 'Weather', sub: 'Live + climate' },
               { onClick: () => setShowFlights(true), icon: <Plane size={22} className="text-indigo-400" />, title: 'Flight Tracker', sub: 'Save + track' },
               { onClick: () => setShowShare(true), icon: <Share2 size={22} className="text-emerald-400" />, title: 'Share with Mom', sub: 'Copy schedule' },
-              { onClick: () => setShowCalc(true), icon: <Calculator size={22} className="text-amber-400" />, title: 'Currency & Tip', sub: 'ZAR ↔ USD' },
+              { onClick: () => setShowCalc(true), icon: <Calculator size={22} className="text-amber-400" />, title: 'Currency & Tip', sub: 'ZAR / USD' },
               { onClick: () => setShowPhrases(true), icon: <Languages size={22} className="text-teal-400" />, title: 'Phrases', sub: 'Afrikaans' },
               { onClick: () => setKidMode(true), icon: <User size={22} className="text-pink-300" />, title: 'Kid Mode', sub: 'Big Five tracker', purple: true }
             ].map((btn, i) => (
@@ -871,7 +795,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* === WEATHER MODAL — Simplified: live data + 1-line historical === */}
       {showWeather && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-sky-900 to-blue-900 px-4 py-4 flex items-center gap-3 border-b border-sky-800">
@@ -882,7 +805,7 @@ export default function TripApp() {
           {isOnline && (
             <div className="px-4 py-3 bg-stone-900 border-b border-stone-800">
               <button onClick={fetchAllWeather} disabled={Object.values(weatherFetching).some(Boolean)} className="w-full bg-sky-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-sans font-semibold rounded-lg py-2.5 text-sm flex items-center justify-center gap-2">
-                {Object.values(weatherFetching).some(Boolean) ? <><Loader2 size={16} className="animate-spin" /> Loading all…</> : <>🔄 Refresh all locations</>}
+                {Object.values(weatherFetching).some(Boolean) ? <><Loader2 size={16} className="animate-spin" /> Loading…</> : <>Refresh all locations</>}
               </button>
             </div>
           )}
@@ -899,18 +822,18 @@ export default function TripApp() {
                       <div className="font-bold text-sky-100 text-lg truncate">{loc.name}</div>
                     </div>
                     <button onClick={() => fetchLiveWeather(loc)} disabled={!isOnline || isLoading} className="text-xs bg-sky-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-sans font-semibold rounded-full px-3 py-1.5 flex items-center gap-1 flex-shrink-0">
-                      {isLoading ? <><Loader2 size={12} className="animate-spin" /> Loading</> : live ? '🔄 Refresh' : '📡 Get live'}
+                      {isLoading ? <><Loader2 size={12} className="animate-spin" /> Loading</> : live ? 'Refresh' : 'Get live'}
                     </button>
                   </div>
                   <div className="p-4 space-y-3">
                     {live && (
                       <>
                         <div className="flex items-center gap-4">
-                          <div className="text-6xl">{weatherCodeToEmoji(live.current.weather_code)}</div>
+                          <div className="text-6xl">{wEmoji(live.current.weather_code)}</div>
                           <div>
                             <div className="text-5xl font-bold text-sky-50">{Math.round(live.current.temperature_2m)}°F</div>
-                            <div className="text-sm text-sky-200 font-sans">{weatherCodeToText(live.current.weather_code)}</div>
-                            <div className="text-xs text-sky-400 font-sans mt-1">💨 {Math.round(live.current.wind_speed_10m)} mph · 💧 {live.current.relative_humidity_2m}%</div>
+                            <div className="text-sm text-sky-200 font-sans">{wText(live.current.weather_code)}</div>
+                            <div className="text-xs text-sky-400 font-sans mt-1">{Math.round(live.current.wind_speed_10m)} mph · {live.current.relative_humidity_2m}%</div>
                           </div>
                         </div>
                         <div className="pt-3 border-t border-stone-800">
@@ -920,10 +843,9 @@ export default function TripApp() {
                               return (
                                 <div key={i} className="text-center">
                                   <div className="text-[10px] text-sky-400 font-sans font-semibold">{i === 0 ? 'Now' : date.toLocaleDateString('en', { weekday: 'short' }).slice(0,3)}</div>
-                                  <div className="text-xl my-1">{weatherCodeToEmoji(code)}</div>
+                                  <div className="text-xl my-1">{wEmoji(code)}</div>
                                   <div className="text-[11px] text-sky-100 font-sans font-semibold">{Math.round(live.daily.temperature_2m_max[i])}°</div>
                                   <div className="text-[10px] text-sky-500 font-sans">{Math.round(live.daily.temperature_2m_min[i])}°</div>
-                                  {live.daily.precipitation_probability_max[i] >= 40 && <div className="text-[9px] text-blue-300 font-sans mt-0.5">{live.daily.precipitation_probability_max[i]}%💧</div>}
                                 </div>
                               );
                             })}
@@ -938,10 +860,10 @@ export default function TripApp() {
                       </div>
                     )}
                     {!live && !cached?.error && (
-                      <div className="text-center py-6 text-xs text-stone-500 font-sans">Tap &quot;Get live&quot; for current forecast</div>
+                      <div className="text-center py-6 text-xs text-stone-500 font-sans">Tap Get live for current forecast</div>
                     )}
                     <div className="text-[11px] text-stone-500 font-sans italic border-t border-stone-800 pt-2">
-                      June typical: {loc.tempRange.replace('Highs ', '').replace(' · Lows ', ' / ')} · {loc.season.toLowerCase()}
+                      June typical: {loc.tempRange} · {loc.season.toLowerCase()}
                     </div>
                   </div>
                 </div>
@@ -951,12 +873,11 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* === MISSIONS === */}
       {showMissions && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-amber-900 to-rose-900 px-4 py-4 flex items-center gap-3 border-b border-amber-800">
             <Target size={22} className="text-amber-200" />
-            <div className="flex-1"><div className="font-bold text-amber-50 text-lg">Countdown Missions</div><div className="text-xs text-amber-200 font-sans">{missionsCompleted} of {missions.length} · {daysUntil} days</div></div>
+            <div className="flex-1"><div className="font-bold text-amber-50 text-lg">Missions</div><div className="text-xs text-amber-200 font-sans">{missionsCompleted}/{missions.length} · {daysUntil} days</div></div>
             <button onClick={() => setShowMissions(false)} className="text-amber-100 p-2"><X size={22} /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -1000,7 +921,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* JOURNAL */}
       {showJournal && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-indigo-900 to-purple-900 px-4 py-4 flex items-center gap-3 border-b border-indigo-800">
@@ -1018,7 +938,7 @@ export default function TripApp() {
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-stone-400 font-sans">{day.date}</div>
                       <div className="font-semibold text-stone-100">{day.title}</div>
-                      {entry?.text ? <div className="text-sm text-indigo-300 font-sans mt-2 line-clamp-2">{entry.text}</div> : <div className="text-xs text-stone-500 font-sans mt-2 italic">No entry — tap to add</div>}
+                      {entry?.text ? <div className="text-sm text-indigo-300 font-sans mt-2 line-clamp-2">{entry.text}</div> : <div className="text-xs text-stone-500 font-sans mt-2 italic">No entry</div>}
                     </div>
                     {entry && <Check size={16} className="text-indigo-400" />}
                   </div>
@@ -1039,11 +959,11 @@ export default function TripApp() {
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             <div>
               <label className="text-xs text-stone-400 font-sans uppercase tracking-wider">How was the day?</label>
-              <textarea value={showJournalEdit.text || ''} onChange={(e) => setShowJournalEdit({ ...showJournalEdit, text: e.target.value })} placeholder="Best moment, funny thing he said..." className="w-full bg-stone-950 border border-stone-700 rounded-lg p-3 mt-1 text-stone-100 font-sans text-sm min-h-[150px]" />
+              <textarea value={showJournalEdit.text || ''} onChange={(e) => setShowJournalEdit({ ...showJournalEdit, text: e.target.value })} placeholder="Best moment..." className="w-full bg-stone-950 border border-stone-700 rounded-lg p-3 mt-1 text-stone-100 font-sans text-sm min-h-[150px]" />
             </div>
             <div>
               <label className="text-xs text-stone-400 font-sans uppercase tracking-wider">Quote from son</label>
-              <textarea value={showJournalEdit.quote || ''} onChange={(e) => setShowJournalEdit({ ...showJournalEdit, quote: e.target.value })} placeholder='"Dad, this is the coolest..."' className="w-full bg-stone-950 border border-stone-700 rounded-lg p-3 mt-1 text-stone-100 font-sans text-sm min-h-[80px] italic" />
+              <textarea value={showJournalEdit.quote || ''} onChange={(e) => setShowJournalEdit({ ...showJournalEdit, quote: e.target.value })} placeholder="Dad, this is the coolest..." className="w-full bg-stone-950 border border-stone-700 rounded-lg p-3 mt-1 text-stone-100 font-sans text-sm min-h-[80px] italic" />
             </div>
             <div>
               <label className="text-xs text-stone-400 font-sans uppercase tracking-wider">Food</label>
@@ -1054,7 +974,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* MEMORIES */}
       {showMemories && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-pink-900 to-rose-900 px-4 py-4 flex items-center gap-3 border-b border-pink-800">
@@ -1066,7 +985,6 @@ export default function TripApp() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {memories.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-5xl mb-4">💫</div>
                 <div className="text-stone-300 font-sans mb-2">No memories yet</div>
                 <div className="text-xs text-stone-500 font-sans px-8">Tap + during the trip to capture standout moments.</div>
               </div>
@@ -1092,7 +1010,6 @@ export default function TripApp() {
 
       {showMemoryAdd && <MemoryAddForm onSave={(m) => { addMemory(m); setShowMemoryAdd(false); }} onCancel={() => setShowMemoryAdd(false)} currentDay={currentDay} />}
 
-      {/* MAPS */}
       {showMaps && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-rose-900 to-amber-900 px-4 py-4 flex items-center gap-3 border-b border-rose-800">
@@ -1126,7 +1043,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* FLIGHTS */}
       {showFlights && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-indigo-900 to-purple-900 px-4 py-4 flex items-center gap-3 border-b border-indigo-800">
@@ -1137,7 +1053,7 @@ export default function TripApp() {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {flightSlots.map(slot => {
               const saved = flights[slot.id];
-              const f = saved || slot.preset; // show preset if nothing saved yet
+              const f = saved || slot.preset;
               const isPresetOnly = !saved && slot.preset;
               return (
                 <div key={slot.id} className={`bg-stone-900 rounded-xl border overflow-hidden ${isPresetOnly && f.airline ? 'border-indigo-800' : 'border-stone-800'}`}>
@@ -1151,14 +1067,14 @@ export default function TripApp() {
                       <div className="space-y-1 pt-2 border-t border-stone-800 text-xs font-sans">
                         {f.airline && <div className="text-stone-300 font-semibold">{f.airline}</div>}
                         {f.number && <a href={getFlightTrackUrl(f.number)} target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-mono flex items-center gap-1">{f.number} <ExternalLink size={10} /></a>}
-                        {f.depart && <div className="text-stone-400">🛫 {f.depart}</div>}
-                        {f.arrive && <div className="text-stone-400">🛬 {f.arrive}</div>}
-                        {f.confirmation && <div className="text-amber-300 font-mono">🎫 {f.confirmation}</div>}
+                        {f.depart && <div className="text-stone-400">Depart: {f.depart}</div>}
+                        {f.arrive && <div className="text-stone-400">Arrive: {f.arrive}</div>}
+                        {f.confirmation && <div className="text-amber-300 font-mono">Conf: {f.confirmation}</div>}
                         {isPresetOnly && <div className="text-[10px] text-amber-400 italic mt-1">Tap to add confirmation #</div>}
                       </div>
                     )}
                     {(!f || (!f.airline && !f.number)) && (
-                      <div className="text-xs text-rose-400 font-sans pt-2 border-t border-stone-800 italic">⚠️ Not yet booked</div>
+                      <div className="text-xs text-rose-400 font-sans pt-2 border-t border-stone-800 italic">Not yet booked</div>
                     )}
                   </div>
                   <button onClick={() => setShowFlightEdit({ ...(slot.preset || {}), ...(saved || {}), id: slot.id, label: slot.label })} className="w-full text-left px-4 py-2 border-t border-stone-800 text-xs text-stone-400 font-sans flex items-center gap-1">
@@ -1190,7 +1106,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* SHARE */}
       {showShare && (
         <div className="fixed inset-0 z-50 bg-stone-950 flex flex-col">
           <div className="bg-gradient-to-r from-emerald-900 to-teal-900 px-4 py-4 flex items-center gap-3 border-b border-emerald-800">
@@ -1200,7 +1115,7 @@ export default function TripApp() {
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <div className="bg-stone-900 rounded-xl border border-stone-800 p-4 mb-4"><pre className="text-xs text-stone-200 font-mono whitespace-pre-wrap leading-relaxed">{generateShareText()}</pre></div>
-            <button onClick={copyShareText} className={`w-full rounded-xl py-4 font-sans font-bold flex items-center justify-center gap-2 ${copiedShare ? 'bg-emerald-600 text-white' : 'bg-emerald-700 text-white'}`}>{copiedShare ? <><Check size={18} /> Copied!</> : <><Copy size={18} /> Copy all</>}</button>
+            <button onClick={copyShareText} className={`w-full rounded-xl py-4 font-sans font-bold flex items-center justify-center gap-2 ${copiedShare ? 'bg-emerald-600 text-white' : 'bg-emerald-700 text-white'}`}>{copiedShare ? <><Check size={18} /> Copied</> : <><Copy size={18} /> Copy all</>}</button>
           </div>
         </div>
       )}
@@ -1229,7 +1144,7 @@ export default function TripApp() {
             <div className="p-4 border-b border-stone-800 flex items-center justify-between"><div className="flex items-center gap-2"><Calculator size={20} className="text-amber-400" /><div className="font-bold text-amber-200">Currency & Tip</div></div><button onClick={() => setShowCalc(false)}><X size={20} className="text-stone-400" /></button></div>
             <div className="p-5 space-y-5">
               <div><label className="text-xs text-stone-400 font-sans uppercase tracking-wider">ZAR</label><div className="flex items-center gap-2 mt-1"><span className="text-amber-300 font-bold text-xl">R</span><input type="number" value={calcZAR} onChange={(e) => handleZARChange(e.target.value)} className="flex-1 bg-stone-950 border border-stone-700 rounded-lg p-3 text-stone-100 text-xl" /></div></div>
-              <div className="text-center text-stone-500 text-xs font-sans">↕ 1 USD ≈ 18 ZAR ↕</div>
+              <div className="text-center text-stone-500 text-xs font-sans">1 USD = 18 ZAR</div>
               <div><label className="text-xs text-stone-400 font-sans uppercase tracking-wider">USD</label><div className="flex items-center gap-2 mt-1"><DollarSign size={22} className="text-emerald-400" /><input type="number" value={calcUSD} onChange={(e) => handleUSDChange(e.target.value)} className="flex-1 bg-stone-950 border border-stone-700 rounded-lg p-3 text-stone-100 text-xl" /></div></div>
               <div className="border-t border-stone-800 pt-5">
                 <div className="text-xs text-stone-400 font-sans uppercase tracking-wider mb-2">Tip</div>
@@ -1297,7 +1212,6 @@ export default function TripApp() {
         </div>
       )}
 
-      {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 bg-stone-950 border-t border-stone-800 px-2 py-2 z-30">
         <div className="flex justify-around max-w-md mx-auto">
           {TABS.map((tab) => {
