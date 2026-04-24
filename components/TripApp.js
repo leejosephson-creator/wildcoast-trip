@@ -61,7 +61,7 @@ export default function TripApp() {
   const [mapFilter, setMapFilter] = useState('all');
 
   const TRIP_START = new Date('2026-05-31T17:00:00');
-  const TRIP_END = new Date('2026-06-14T23:59:00');
+  const TRIP_END = new Date('2026-06-15T23:59:00');
   const today = new Date();
   const isDuringTrip = today >= TRIP_START && today <= TRIP_END;
   const tripDayIndex = isDuringTrip ? Math.floor((today - TRIP_START) / (1000 * 60 * 60 * 24)) : null;
@@ -180,55 +180,28 @@ export default function TripApp() {
 
   const weatherLocations = [
     {
-      id: 'nyc', name: 'New York City', icon: '🏙️', lat: 40.7128, lng: -74.0060,
-      season: 'Late spring / early summer', tempRange: 'Highs 72-78°F · Lows 58-64°F',
-      typical: 'Mild and pleasant. Can be humid. Occasional thunderstorms. Daylight until ~8:20 PM.',
-      packFor: 'Light layers. Tee + light jacket for evenings. Comfortable walking shoes.',
-      dayByDay: [
-        { date: 'May 31', forecast: 'Pleasant evening for arrival. 70s°F at dinner time.', ideal: true },
-        { date: 'June 1', forecast: 'Morning departure. Mild, likely clear.' }
-      ],
-      kidNote: 'One light layer he can shed at Carmine\'s.'
-    },
-    {
       id: 'capetown', name: 'Cape Town', icon: '🏖️', lat: -33.9249, lng: 18.4241,
       season: 'Winter (Southern Hemisphere)', tempRange: 'Highs 62-65°F · Lows 47-52°F',
-      typical: 'Winter is wet season. Windy, rainy days mixed with bright clear ones. Sea winds at Sunset Beach can be fierce.',
-      packFor: 'Warm jacket essential. Rain shell. Layers. Beanie and gloves for Table Mountain. Closed shoes.',
-      dayByDay: [
-        { date: 'June 2', forecast: 'Arrival day. Mild afternoon, cool evening.', ideal: true },
-        { date: 'June 3', forecast: 'Table Mountain day — check cableway status at 7 AM.' },
-        { date: 'June 4', forecast: 'Cape Point drive. Windy day possible.', warning: 'Secure loose items at Cape Point.' },
-        { date: 'June 5', forecast: 'Robben Island ferry — morning departures most reliable.' },
-        { date: 'June 6', forecast: 'Shark dive day. Ocean ~57°F.', warning: 'Seasick meds BEFORE boarding.' },
-        { date: 'June 7', forecast: 'Braai day. Indoor backup: Kirstenbosch greenhouse.' },
-        { date: 'June 8', forecast: 'Lion\'s Head sunrise = 40°F at trailhead.' }
-      ],
-      kidNote: 'Pack him a beanie + gloves. Wind is worse than the temp suggests.'
+      typical: 'Wet season. Windy and rainy mixed with bright clear days.',
+      packFor: '', dayByDay: [], kidNote: ''
     },
     {
       id: 'hoedspruit', name: 'Kruger (Hoedspruit)', icon: '🦁', lat: -24.3485, lng: 31.0494,
       season: 'Dry winter', tempRange: 'Highs 75-78°F · Lows 40-45°F',
-      typical: 'Dry winter. Warm sunny days, COLD mornings. Open-vehicle game drives at 6 AM are shocking. BEST safari weather — animals at water sources.',
-      packFor: 'Warm jacket, fleece, thermal base, beanie, gloves, buff. NEUTRAL colors. Closed shoes.',
-      dayByDay: [
-        { date: 'June 9', forecast: 'Transfer day. Warm afternoon. First sunset drive cools fast.', ideal: true },
-        { date: 'June 10', forecast: 'Morning drive = freezing (40°F), midday warm.', warning: 'Hot water bottle and blanket in vehicle.' },
-        { date: 'June 11', forecast: 'Consistent pattern. Bush walk afternoon is warmest.' },
-        { date: 'June 12', forecast: 'Departure morning — last cold drive.' }
-      ],
-      kidNote: 'Layers not optional. He WILL be cold at 6 AM.'
+      typical: 'Warm sunny days, cold mornings. Best safari weather.',
+      packFor: '', dayByDay: [], kidNote: ''
     },
     {
       id: 'johannesburg', name: 'Johannesburg', icon: '🏙️', lat: -26.2041, lng: 28.0473,
-      season: 'Dry winter (high altitude)', tempRange: 'Highs 62-65°F · Lows 38-42°F',
-      typical: 'Jo\'burg is 5,700 ft elevation — cold mornings, warm sunny afternoons. Dry air. Nights drop fast.',
-      packFor: 'Warm layers. Kruger gear works here.',
-      dayByDay: [
-        { date: 'June 12', forecast: 'Arrival. Cold evening, clear. Dinner indoors.' },
-        { date: 'June 13', forecast: 'Departure day. Cool morning, warm afternoon.' }
-      ],
-      kidNote: 'Museum day — indoor comfort matters.'
+      season: 'Dry winter', tempRange: 'Highs 62-65°F · Lows 38-42°F',
+      typical: 'High altitude. Cold mornings, warm afternoons. Clear and dry.',
+      packFor: '', dayByDay: [], kidNote: ''
+    },
+    {
+      id: 'atlanta', name: 'Atlanta (layover)', icon: '✈️', lat: 33.7490, lng: -84.3880,
+      season: 'Late spring / early summer', tempRange: 'Highs 82-86°F · Lows 64-68°F',
+      typical: 'Warm and humid. Possible afternoon thunderstorms.',
+      packFor: '', dayByDay: [], kidNote: ''
     }
   ];
 
@@ -242,29 +215,28 @@ export default function TripApp() {
   const tipAmountUSD = calcZAR ? ((parseFloat(calcZAR) * tipPct / 100) / RATE).toFixed(2) : '0';
 
   const missions = [
-    { id: 'm1', daysBefore: 60, title: 'Book safari lodge', detail: 'Sabi Sabi, Lion Sands, MalaMala. Sell out for June.', category: 'critical' },
-    { id: 'm2', daysBefore: 60, title: 'Book EWR-CPT flights', detail: 'Check United direct vs connections.', category: 'critical' },
-    { id: 'm3', daysBefore: 45, title: 'Book shark cage diving', detail: 'Marine Dynamics or White Shark Projects. Confirm 12yo allowed.', category: 'critical' },
-    { id: 'm4', daysBefore: 45, title: 'Book CPT-HDS internal flight', detail: 'Airlink or CemAir. Soft-sided bags only.', category: 'critical' },
+    { id: 'm1', daysBefore: 60, title: 'Book safari lodge (3 nights)', detail: 'Sabi Sabi, Lion Sands, MalaMala, Singita. Sells out for June.', category: 'critical' },
+    { id: 'm2', daysBefore: 60, title: 'Book CPT → JNB → HDS flights', detail: 'Or charter direct to lodge airstrip from JNB.', category: 'critical' },
+    { id: 'm3', daysBefore: 45, title: 'Book MIA → ATL flight (May 31)', detail: 'Must arrive ATL by 7pm to make 9pm Delta 210.', category: 'critical' },
+    { id: 'm4', daysBefore: 45, title: 'Book shark cage diving (June 8)', detail: 'Marine Dynamics or White Shark Projects. Confirm 12yo allowed.', category: 'critical' },
     { id: 'm5', daysBefore: 42, title: 'Travel doctor appointment', detail: 'Malarone prescription. Vaccines current.', category: 'health' },
-    { id: 'm6', daysBefore: 30, title: 'Book Manhattan hotel (May 31)', detail: 'Knickerbocker, Lotte, or 1 Hotel.', category: 'logistics' },
-    { id: 'm7', daysBefore: 30, title: 'Buy travel insurance', detail: 'Min $100k medical + $500k evacuation.', category: 'logistics' },
-    { id: 'm8', daysBefore: 30, title: 'Reserve Carmine\'s + Top of the Rock', detail: 'May 31 evening.', category: 'logistics' },
-    { id: 'm9', daysBefore: 21, title: 'Reserve Chefs Warehouse Beau Constantia', detail: 'June 8 dinner.', category: 'logistics' },
-    { id: 'm10', daysBefore: 21, title: 'Book Robben Island ferry', detail: 'Morning slot recommended.', category: 'logistics' },
-    { id: 'm11', daysBefore: 21, title: 'Reserve Cape Town rental car', detail: 'Specify AUTOMATIC. Full insurance.', category: 'logistics' },
-    { id: 'm12', daysBefore: 14, title: 'Check passports', detail: 'Valid 30+ days past return. 2 blank pages.', category: 'critical' },
-    { id: 'm13', daysBefore: 14, title: 'Son\'s birth certificate', detail: 'Unabridged. Notarized consent letter.', category: 'critical' },
-    { id: 'm14', daysBefore: 14, title: 'Buy safari clothing', detail: 'Khaki/olive/brown. No bright colors.', category: 'packing' },
-    { id: 'm15', daysBefore: 10, title: 'Notify banks of travel', detail: 'Or cards freeze.', category: 'logistics' },
-    { id: 'm16', daysBefore: 10, title: 'Get International Driving Permit', detail: 'AAA, $20.', category: 'logistics' },
-    { id: 'm17', daysBefore: 7, title: 'Download offline content', detail: 'Netflix, Spotify, games.', category: 'packing' },
-    { id: 'm18', daysBefore: 7, title: 'Charge power banks', detail: '100% night before. Universal adapter.', category: 'packing' },
-    { id: 'm19', daysBefore: 5, title: 'Start malaria meds', detail: 'Malarone 1-2 days before Kruger.', category: 'health' },
-    { id: 'm20', daysBefore: 3, title: 'Confirm all reservations', detail: 'Re-check everything.', category: 'logistics' },
-    { id: 'm21', daysBefore: 2, title: 'Print all confirmations', detail: 'Phone dies. Paper doesn\'t.', category: 'logistics' },
-    { id: 'm22', daysBefore: 1, title: 'Pack carry-on essentials', detail: 'Passports, meds, chargers, snacks.', category: 'packing' },
-    { id: 'm23', daysBefore: 0, title: 'DEPARTURE DAY', detail: 'Arrive EWR 3+ hrs early.', category: 'critical' }
+    { id: 'm6', daysBefore: 30, title: 'Buy travel insurance', detail: 'Min $100k medical + $500k evacuation.', category: 'logistics' },
+    { id: 'm7', daysBefore: 30, title: 'Reserve Chefs Warehouse Beau Constantia', detail: 'June 10 dinner. Tasting menu, mountain views.', category: 'logistics' },
+    { id: 'm8', daysBefore: 21, title: 'Book Robben Island ferry (June 6)', detail: 'Morning departure - more reliable than afternoon.', category: 'logistics' },
+    { id: 'm9', daysBefore: 21, title: 'Reserve Cape Town rental car', detail: 'Specify AUTOMATIC. Full insurance. Pickup Jun 2, return Jun 11.', category: 'logistics' },
+    { id: 'm10', daysBefore: 21, title: 'Book Atlantis Dunes sandboarding', detail: 'June 9. Reserve boards in advance.', category: 'logistics' },
+    { id: 'm11', daysBefore: 14, title: 'Check both passports', detail: 'Valid 30+ days past return (June 15). 2 blank pages each.', category: 'critical' },
+    { id: 'm12', daysBefore: 14, title: 'Son\'s unabridged birth certificate', detail: 'Required for SA entry with minor. Notarized consent letter from mom.', category: 'critical' },
+    { id: 'm13', daysBefore: 14, title: 'Buy safari clothing', detail: 'Khaki/olive/brown. NO bright colors. NO blue (tsetse flies).', category: 'packing' },
+    { id: 'm14', daysBefore: 10, title: 'Notify banks of travel', detail: 'Or cards freeze. Both USA and South Africa.', category: 'logistics' },
+    { id: 'm15', daysBefore: 10, title: 'Get International Driving Permit', detail: 'AAA, $20. Required with US license in SA.', category: 'logistics' },
+    { id: 'm16', daysBefore: 7, title: 'Download offline content', detail: 'Netflix, Spotify, books, games. 14h flight!', category: 'packing' },
+    { id: 'm17', daysBefore: 7, title: 'Charge power banks', detail: '100% night before. Universal Type M adapter packed.', category: 'packing' },
+    { id: 'm18', daysBefore: 5, title: 'Start malaria meds', detail: 'Malarone: 1-2 days before Kruger arrival. Take with food.', category: 'health' },
+    { id: 'm19', daysBefore: 3, title: 'Confirm all reservations', detail: 'Hotel, all flights, shark dive, lodge pickup, Chefs Warehouse.', category: 'logistics' },
+    { id: 'm20', daysBefore: 2, title: 'Print all confirmations', detail: 'Phone dies. Paper doesn\'t. Keep in carry-on.', category: 'logistics' },
+    { id: 'm21', daysBefore: 1, title: 'Pack carry-on essentials', detail: 'Passports, meds, change of clothes, chargers, snacks.', category: 'packing' },
+    { id: 'm22', daysBefore: 0, title: 'DEPARTURE DAY', detail: 'Arrive MIA 2 hrs early. ATL platinum lounge before Delta 210.', category: 'critical' }
   ];
 
   const getDueMissions = () => {
@@ -281,86 +253,109 @@ export default function TripApp() {
   };
 
   const days = [
-    { num: 0, date: 'Sun, May 31', title: 'Manhattan Evening', icon: '🗽', color: 'from-amber-900 to-amber-700', summary: 'EWR arrival, Times Square, Top of the Rock',
+    { num: 0, date: 'Sun, May 31', title: 'MIA → ATL', icon: '✈️', color: 'from-slate-700 to-slate-900', summary: 'Miami to Atlanta layover',
       sections: [
-        { title: 'Luggage at EWR', items: ['Land and collect bags','Store at Smarte Carte','Keep overnight bag']},
-        { title: 'Get to Manhattan', items: ['AirTrain to Newark Station','NJ Transit to Penn','Cab or walk to hotel']},
-        { title: 'Evening', items: ['7:30 PM: Carmine\'s','9:00 PM: Times Square','10:00 PM: Top of the Rock','11:00 PM: Hotel']},
-        { title: 'June 1 AM', items: ['Breakfast','Train to EWR','Check in 3+ hrs early']}
+        { title: 'Pre-flight', items: ['Confirm MIA→ATL flight booked','Arrive MIA 2 hrs early','Passports + birth certificate','Carry-on essentials only']},
+        { title: 'ATL layover', items: ['Land at ATL','Find Delta 210 gate','Platinum lounge access (use it)','Light dinner before 9pm boarding','9:00 PM: Delta 210 to Cape Town']}
       ]},
-    { num: 1, date: 'Mon, June 1', title: 'Fly to Cape Town', icon: '✈️', color: 'from-slate-800 to-slate-600', summary: 'EWR to Cape Town',
+    { num: 1, date: 'Mon, June 1', title: 'Fly to Cape Town', icon: '🛫', color: 'from-slate-800 to-slate-600', summary: 'Delta 210 overnight to CPT',
       sections: [
-        { title: 'Pre-flight', items: ['Arrive 3+ hrs early','Offline content','Melatonin','Passports + birth cert']},
-        { title: 'In-flight', items: ['Hydrate','Move every 2 hrs','Shift to SA time']}
+        { title: 'On the plane', items: ['Business class — use the lie-flat','Hydrate aggressively','Melatonin after first meal','Set watch to SA time (6 hrs ahead)','Compression socks','Try to sleep 6+ hrs']},
+        { title: 'Entertainment for son', items: ['Download offline content beforehand','iPad with games + movies','Headphones','Light snacks']}
       ]},
-    { num: 2, date: 'Tue, June 2', title: 'Arrive, Settle In', icon: '🏖️', color: 'from-orange-700 to-red-800', summary: 'Land, drive to Sunset Beach',
+    { num: 2, date: 'Tue, June 2', title: 'Arrive Cape Town', icon: '🏖️', color: 'from-orange-700 to-red-800', summary: 'Land 5:50pm, settle at Sunset Beach',
       sections: [
-        { title: 'Arrival', items: ['Rental car','Drive to 9 Soluta St','Unpack']},
-        { title: 'Low-key', items: ['Dash or On the Rocks','Walk Sunset Beach','Early bed']}
+        { title: 'Arrival', items: ['Customs + immigration','Pick up rental car','Drive to 9 Soluta St (~25 min)','Unpack, settle in']},
+        { title: 'Low-key evening', items: ['Light dinner at home or Dash','Walk Sunset Beach','Bed early — jet lag is real']}
       ]},
-    { num: 3, date: 'Wed, June 3', title: 'Table Mountain + V&A', icon: '⛰️', color: 'from-emerald-800 to-teal-900', summary: 'Cable car, aquarium, waterfront',
+    { num: 3, date: 'Wed, June 3', title: 'Beach + Recovery', icon: '🌅', color: 'from-amber-700 to-orange-800', summary: 'Slow first full day, recover from jet lag',
       sections: [
-        { title: 'Morning', items: ['Check cableway 7 AM','Book online','2-3 hrs top']},
-        { title: 'Afternoon', items: ['Tiger\'s Milk','Two Oceans Aquarium','Grand Africa Café']}
+        { title: 'Easy morning', items: ['Sleep in','Coffee on the beach','Walk Sunset Beach with son']},
+        { title: 'Afternoon', items: ['Lunch at On The Rocks','Explore Milnerton','Stop by uncle\'s house to say hi']},
+        { title: 'Evening', items: ['Dinner at home','Game night','Early bed — big day tomorrow']}
       ]},
-    { num: 4, date: 'Thu, June 4', title: 'Cape Point + Penguins', icon: '🐧', color: 'from-blue-900 to-indigo-900', summary: 'Chapman\'s Peak, Cape, Boulders',
+    { num: 4, date: 'Thu, June 4', title: 'Table Mountain + V&A', icon: '⛰️', color: 'from-emerald-800 to-teal-900', summary: 'Cable car, aquarium, waterfront',
       sections: [
-        { title: 'Drive south', items: ['8:30 AM','Via Hout Bay','Chapman\'s Peak']},
-        { title: 'Cape Point', items: ['Funicular or hike','WINDOWS UP','Two Oceans lunch']},
-        { title: 'Boulders', items: ['Penguin colony','Boardwalks']}
+        { title: 'Morning: Table Mountain', items: ['Check cableway status 7 AM','Book online to skip line','2-3 hrs on top']},
+        { title: 'Afternoon: V&A', items: ['Lunch: Tiger\'s Milk','Two Oceans Aquarium','Dinner: Grand Africa Café']}
       ]},
-    { num: 5, date: 'Fri, June 5', title: 'Robben Island + Bo-Kaap', icon: '🏛️', color: 'from-purple-900 to-slate-800', summary: 'Mandela\'s prison, Cape Malay',
+    { num: 5, date: 'Fri, June 5', title: 'Cape Point + Penguins', icon: '🐧', color: 'from-blue-900 to-indigo-900', summary: 'Chapman\'s Peak, Cape, Boulders',
       sections: [
-        { title: 'Robben Island', items: ['Ferry from V&A','3.5 hrs','Ex-prisoners guide']},
-        { title: 'Bo-Kaap', items: ['Bo-Kaap Kombuis','Painted streets']}
+        { title: 'Drive south', items: ['8:30 AM depart','Via Hout Bay','Coffee stop','Chapman\'s Peak Drive']},
+        { title: 'Cape Point', items: ['Funicular or hike to lighthouse','Sign photo','WINDOWS UP — baboons','Lunch: Two Oceans Restaurant']},
+        { title: 'Boulders', items: ['Penguin colony','Boardwalks','R180pp entrance']},
+        { title: 'Return', items: ['Via Kalk Bay','Dinner: Kalky\'s or Harbour House']}
       ]},
-    { num: 6, date: 'Sat, June 6', title: 'Shark Cage Diving', icon: '🦈', color: 'from-cyan-900 to-blue-950', summary: 'Gansbaai great whites',
+    { num: 6, date: 'Sat, June 6', title: 'Robben Island + Bo-Kaap', icon: '🏛️', color: 'from-purple-900 to-slate-800', summary: 'Mandela\'s prison, Cape Malay quarter',
       sections: [
-        { title: 'Adventure', items: ['Drive Gansbaai','Marine Dynamics','BOOK AHEAD']},
-        { title: 'Bring', items: ['Seasickness meds','Warm clothes','Towel','GoPro']}
+        { title: 'Robben Island', items: ['Ferry from V&A (book ahead)','3.5 hrs total','Ex-prisoners as guides']},
+        { title: 'Bo-Kaap', items: ['Lunch: Bo-Kaap Kombuis','Painted streets photo walk','Cape Malay history']},
+        { title: 'Sunset', items: ['Camps Bay','The Bungalow for sundowners']}
       ]},
-    { num: 7, date: 'Sun, June 7', title: 'Family Day', icon: '🔥', color: 'from-amber-800 to-orange-900', summary: 'Braai with uncle and cousins',
+    { num: 7, date: 'Sun, June 7', title: 'Family Braai Day', icon: '🔥', color: 'from-amber-800 to-orange-900', summary: 'Braai with uncle and cousins',
       sections: [
-        { title: 'Braai', items: ['Uncle\'s braai','Pick n Pay meat']},
-        { title: 'Afternoon', items: ['Kirstenbosch','Intaka Island']}
+        { title: 'Morning', items: ['Sleep in','Pick n Pay run for braai supplies']},
+        { title: 'Braai', items: ['Uncle\'s braai','Cousins meet your son','Boerewors, lamb chops, pap','Stay late']},
+        { title: 'Wind-down', items: ['Easy walk on the beach','Early bed']}
       ]},
-    { num: 8, date: 'Mon, June 8', title: 'Adventure Day', icon: '🏔️', color: 'from-rose-900 to-orange-800', summary: 'Lion\'s Head OR Atlantis',
+    { num: 8, date: 'Mon, June 8', title: 'Shark Cage Diving', icon: '🦈', color: 'from-cyan-900 to-blue-950', summary: 'Gansbaai great whites',
       sections: [
-        { title: 'Lion\'s Head', items: ['5:15 AM start','2hr round trip','Sunrise']},
-        { title: 'Dinner', items: ['Chefs Warehouse','RESERVATIONS']}
+        { title: 'Adventure', items: ['Drive to Gansbaai (2 hrs)','Marine Dynamics or White Shark Projects','Confirm 12yo allowed when booking','Wetsuit + cage = 6ft from sharks']},
+        { title: 'Bring', items: ['Seasickness meds BEFORE boarding','Light breakfast only','Warm clothes for after','Towel + change','GoPro']},
+        { title: 'Return', items: ['Hermanus Cliff Path detour','Dinner back in Cape Town']}
       ]},
-    { num: 9, date: 'Tue, June 9', title: 'Fly to Kruger', icon: '🦒', color: 'from-yellow-800 to-amber-900', summary: 'CPT to Hoedspruit',
+    { num: 9, date: 'Tue, June 9', title: 'Atlantis Dunes', icon: '🏜️', color: 'from-yellow-700 to-amber-900', summary: 'Sandboarding adventure',
       sections: [
-        { title: 'Pack', items: ['Safari neutrals','Warm jacket','Drop rental']},
-        { title: 'Flight', items: ['Airlink/CemAir','~2.5 hrs','Lodge collects']}
+        { title: 'Morning: Sandboarding', items: ['Drive to Atlantis Dunes (~40 min)','Book sandboard rental in advance','Wear closed shoes — sand is everywhere','Goggles or sunglasses essential']},
+        { title: 'On the dunes', items: ['Beginner runs first','Take video — son will love this','Stay hydrated','2-3 hrs is plenty']},
+        { title: 'Afternoon', items: ['Lunch nearby','Back to Sunset Beach','Pool time or beach walk','Wash sand out of EVERYTHING']}
       ]},
-    { num: 10, date: 'Wed, June 10', title: 'Kruger Day 2', icon: '🦁', color: 'from-yellow-900 to-orange-900', summary: 'Full safari rhythm',
+    { num: 10, date: 'Wed, June 10', title: 'Adventure Day', icon: '🏔️', color: 'from-rose-900 to-orange-800', summary: 'Lion\'s Head sunrise + Chefs Warehouse dinner',
       sections: [
-        { title: 'Rhythm', items: ['5:30 coffee','6 AM drive','9:30 breakfast','4 PM drive','7:30 boma']}
+        { title: 'Lion\'s Head sunrise', items: ['5:15 AM depart','2hr round trip','Chains section near top','Sunrise from summit','Coffee on way home']},
+        { title: 'Recovery', items: ['Big breakfast','Nap','Sea Point Promenade walk']},
+        { title: 'Dinner', items: ['Chefs Warehouse Beau Constantia','RESERVATIONS REQUIRED','Tasting menu, mountain views','Dress smart-casual']}
       ]},
-    { num: 11, date: 'Thu, June 11', title: 'Kruger Day 3', icon: '🐆', color: 'from-stone-800 to-amber-950', summary: 'Optional bush walk',
+    { num: 11, date: 'Thu, June 11', title: 'CPT → JNB → Kruger', icon: '🦒', color: 'from-yellow-800 to-amber-900', summary: 'Travel to safari lodge',
       sections: [
-        { title: 'Activities', items: ['Bush walk','Night drive','Spa']}
+        { title: 'Pack out', items: ['Pack safari clothes (NEUTRAL colors only)','Warm jacket on top — Kruger mornings cold','Drop rental car at CPT','Soft-sided bag preferred for puddle-jumper']},
+        { title: 'Flights', items: ['CPT → JNB (~2 hrs)','Connect at JNB','JNB → HDS or direct charter to lodge','Lodge transfer from airstrip']},
+        { title: 'Arrival', items: ['Welcome drink','Lodge orientation','First sunset drive!','Boma dinner']}
       ]},
-    { num: 12, date: 'Fri, June 12', title: 'Kruger to JNB', icon: '🏙️', color: 'from-slate-700 to-gray-900', summary: 'Fly to Johannesburg',
+    { num: 12, date: 'Fri, June 12', title: 'Kruger Day 2', icon: '🦁', color: 'from-yellow-900 to-orange-900', summary: 'Full safari rhythm',
       sections: [
-        { title: 'Morning', items: ['Final drive','Transfer HDS']},
-        { title: 'JNB', items: ['Apartheid Museum','Four Seasons']}
+        { title: 'Morning', items: ['5:30 AM coffee + rusks','6:00 AM game drive (3-4 hrs)','9:30 AM bush breakfast','Mid-morning rest']},
+        { title: 'Afternoon', items: ['12:30 brunch','Pool / nap / read','Optional bush walk if available']},
+        { title: 'Evening', items: ['4:00 PM sunset drive (3-4 hrs)','Sundowner stop in the bush','7:30 PM boma dinner under stars']}
       ]},
-    { num: 13, date: 'Sat, June 13', title: 'Fly Home', icon: '🛬', color: 'from-indigo-900 to-slate-900', summary: 'Long-haul to EWR',
-      sections: [{ title: 'Travel', items: ['Window seats','Hydrate']}]},
-    { num: 14, date: 'Sun, June 14', title: 'Home', icon: '🏠', color: 'from-slate-700 to-slate-900', summary: 'Arrive home',
-      sections: [{ title: 'Welcome home', items: ['Arrive EWR','Print photos']}]}
+    { num: 13, date: 'Sat, June 13', title: 'Kruger Day 3', icon: '🐆', color: 'from-stone-800 to-amber-950', summary: 'Final full safari day',
+      sections: [
+        { title: 'Activities', items: ['Morning drive (push for leopard if missing)','Optional bush walk with armed ranger','Spa or pool downtime']},
+        { title: 'Sunset drive', items: ['Last drive of the trip','Soak it in','Big farewell dinner']},
+        { title: 'Tipping (cash ZAR)', items: ['Ranger: R250-300/day','Tracker: R150-200/day','General staff: R100/day','Have envelopes ready']}
+      ]},
+    { num: 14, date: 'Sun, June 14', title: 'Kruger → JNB → ATL', icon: '🛬', color: 'from-indigo-900 to-slate-900', summary: 'Final drive, then long flight home',
+      sections: [
+        { title: 'Morning', items: ['Final game drive','Farewell breakfast','Lodge transfer to airstrip']},
+        { title: 'JNB connection', items: ['Fly to JNB','Long layover','Delta lounge if available','Dinner before boarding']},
+        { title: 'Delta 201', items: ['9:55 PM departure','Business class — sleep!','14h 19m to ATL']}
+      ]},
+    { num: 15, date: 'Mon, June 15', title: 'ATL → MIA → Home', icon: '🏠', color: 'from-slate-700 to-slate-900', summary: 'Land ATL 8:20am, MIA by 1:04pm',
+      sections: [
+        { title: 'Arrival ATL', items: ['Land 8:20 AM','Customs + immigration','Recheck bags if needed','Breakfast in lounge']},
+        { title: 'Final flight', items: ['Delta 1332 — 11:00 AM','First class','Land MIA 1:04 PM']},
+        { title: 'Home', items: ['Pickup or rideshare','Unpack at your pace','Print favorite photos','Plan next trip 😉']}
+      ]}
   ];
 
   const packingCategories = {
-    'Documents (carry-on)': { phase: 'all', items: ['Passports','Birth certificate','Consent letter','Flight confirmations','Insurance','Lodge confirmations','IDP','Cards + cash'] },
-    'Health & meds': { phase: 'all', items: ['Malarone','Melatonin','Seasickness tablets','SPF 50+','DEET 30%+','First aid','Prescriptions'] },
-    'Manhattan (1 night)': { phase: 'manhattan', items: ['Overnight bag','Change of clothes','Phone charger','Toiletries'] },
-    'Cape Town clothes': { phase: 'capetown', items: ['Warm jacket','Rain jacket','Layers','Jeans','Closed shoes','Nice outfit','Swimsuit','Beanie + gloves'] },
-    'Safari (neutrals only)': { phase: 'kruger', items: ['Khaki/olive shirts','Convertible pants','Fleece + jacket','Beanie + gloves','Walking shoes','Hat','Binoculars'] },
-    'Tech': { phase: 'all', items: ['Universal adapter','Battery pack','Camera','Chargers','Headphones','iPad','GoPro'] },
-    'For your son': { phase: 'all', items: ['Books','Backpack','Snacks','Journal','Games'] }
+    'Documents (carry-on)': { phase: 'all', items: ['Both passports','Son\'s birth certificate (unabridged)','Notarized consent letter (if mom not coming)','Delta confirmations + boarding passes','Travel insurance','Lodge confirmation','International Driving Permit','Cards + cash (USD + ZAR)'] },
+    'Health & meds': { phase: 'all', items: ['Malarone (start 2 days before Kruger)','Melatonin','Seasickness tablets (shark dive)','Sunscreen SPF 50+','DEET 30%+','First aid kit','Prescriptions in original bottles'] },
+    'Cape Town clothes (9 days)': { phase: 'capetown', items: ['Warm jacket','Rain shell','Fleece','Long sleeve layers (3-4)','Jeans + warm pants','Closed walking shoes','Smart-casual outfit (Chefs Warehouse)','Swimsuit (just in case)','Beanie + gloves'] },
+    'Adventure gear': { phase: 'capetown', items: ['Quick-dry shorts (sandboarding)','Closed shoes for dunes','Goggles or sunglasses','GoPro mount','Towel for shark dive','Change of clothes for after diving'] },
+    'Safari (NEUTRALS only)': { phase: 'kruger', items: ['Khaki/olive/brown shirts (3-4)','Convertible safari pants','Insulated jacket','Fleece mid-layer','Thermal base layer','Beanie + gloves + buff','Closed walking shoes','Wide-brim hat','Binoculars (yours and son\'s)'] },
+    'Tech': { phase: 'all', items: ['Universal adapter (Type M for SA)','Battery pack (10000mAh+)','Camera + extra SD cards','Phone chargers','Headphones (good ones for flight)','iPad with offline downloads','GoPro + accessories'] },
+    'For your son': { phase: 'all', items: ['Books / Kindle','Small backpack','Favorite snacks (US ones, can\'t get there)','Journal + pen','Offline games on iPad','Headphones (his own)','Comfort item (if applicable)'] }
   };
 
   const filteredPackingList = () => {
@@ -372,26 +367,25 @@ export default function TripApp() {
 
   const packingFilters = [
     { id: 'all', label: 'Everything' },
-    { id: 'manhattan', label: '🗽 NYC' },
     { id: 'capetown', label: '🏖️ Cape Town' },
     { id: 'kruger', label: '🦁 Kruger' }
   ];
 
   const bookings = [
-    { id: 'b1', task: 'Book EWR-CPT flights', urgent: true },
-    { id: 'b2', task: 'Book safari lodge', urgent: true },
-    { id: 'b3', task: 'Book CPT-HDS flight', urgent: true },
-    { id: 'b4', task: 'Book shark cage diving', urgent: true },
-    { id: 'b5', task: 'Book Manhattan hotel', urgent: true },
-    { id: 'b12', task: 'Travel doctor (malaria meds)', urgent: true },
-    { id: 'b6', task: 'Book Robben Island ferry', urgent: false },
-    { id: 'b7', task: 'Book Table Mountain Cableway', urgent: false },
-    { id: 'b8', task: 'Book Top of the Rock', urgent: false },
-    { id: 'b9', task: 'Reserve Carmine\'s', urgent: false },
-    { id: 'b10', task: 'Reserve Chefs Warehouse', urgent: false },
-    { id: 'b11', task: 'Rental car Cape Town', urgent: false },
-    { id: 'b13', task: 'Travel insurance', urgent: false },
-    { id: 'b14', task: 'EWR luggage storage', urgent: false }
+    { id: 'b1', task: 'Book MIA → ATL flight (May 31)', urgent: true },
+    { id: 'b2', task: 'Book ATL → CPT - DONE (DL210, June 1)', urgent: true },
+    { id: 'b3', task: 'Book CPT → JNB → HDS (June 11)', urgent: true },
+    { id: 'b4', task: 'Book safari lodge (3 nights, June 11-14)', urgent: true },
+    { id: 'b5', task: 'Book JNB → ATL - DONE (DL201, June 14)', urgent: true },
+    { id: 'b6', task: 'Book ATL → MIA - DONE (DL1332, June 15)', urgent: true },
+    { id: 'b7', task: 'Book shark cage diving (June 8)', urgent: true },
+    { id: 'b8', task: 'Travel doctor (malaria meds)', urgent: true },
+    { id: 'b9', task: 'Book Robben Island ferry (June 6)', urgent: false },
+    { id: 'b10', task: 'Book Table Mountain Cableway', urgent: false },
+    { id: 'b11', task: 'Reserve Chefs Warehouse Beau Constantia (June 10)', urgent: false },
+    { id: 'b12', task: 'Book Atlantis Dunes sandboarding (June 9)', urgent: false },
+    { id: 'b13', task: 'Rental car Cape Town (Jun 2-11)', urgent: false },
+    { id: 'b14', task: 'Travel insurance', urgent: false }
   ];
 
   const emergencyByLocation = {
@@ -452,19 +446,21 @@ export default function TripApp() {
 
   const locations = [
     { id: 'momshouse', name: "Mom's House", address: '9 Soluta Street, Sunset Beach, Milnerton', category: 'home', icon: '🏠', notes: 'Base camp.' },
-    { id: 'ewr', name: 'Newark Airport', address: '3 Brewster Rd, Newark, NJ', category: 'airport', icon: '✈️' },
-    { id: 'knickerbocker', name: 'Knickerbocker Hotel', address: '6 Times Square, NY', category: 'hotel', icon: '🏨' },
-    { id: 'carmines', name: "Carmine's", address: '200 W 44th St, NY', category: 'dining', icon: '🍝' },
-    { id: 'topoftherock', name: 'Top of the Rock', address: '30 Rockefeller Plaza', category: 'attraction', icon: '🏙️' },
-    { id: 'cpt', name: 'Cape Town Airport', address: 'Cape Town', category: 'airport', icon: '✈️' },
+    { id: 'mia', name: 'Miami International (MIA)', address: '2100 NW 42nd Ave, Miami, FL', category: 'airport', icon: '✈️' },
+    { id: 'atl', name: 'Atlanta Hartsfield (ATL)', address: 'Atlanta, GA', category: 'airport', icon: '✈️' },
+    { id: 'cpt', name: 'Cape Town Airport (CPT)', address: 'Cape Town', category: 'airport', icon: '✈️' },
     { id: 'tablemtn', name: 'Table Mountain', address: 'Tafelberg Rd, Cape Town', category: 'attraction', icon: '⛰️' },
     { id: 'vanda', name: 'V&A Waterfront', address: 'Cape Town', category: 'attraction', icon: '⚓' },
     { id: 'capepoint', name: 'Cape of Good Hope', address: 'Cape Point', category: 'attraction', icon: '🌊' },
     { id: 'boulders', name: 'Boulders Penguins', address: 'Simon\'s Town', category: 'attraction', icon: '🐧' },
-    { id: 'gansbaai', name: 'Gansbaai', address: 'Kleinbaai Harbour', category: 'attraction', icon: '🦈' },
-    { id: 'chefswarehouse', name: 'Chefs Warehouse', address: 'Constantia', category: 'dining', icon: '🍷' },
-    { id: 'hds', name: 'Hoedspruit Airport', address: 'Hoedspruit', category: 'airport', icon: '✈️' },
-    { id: 'jnb', name: 'OR Tambo JNB', address: 'Johannesburg', category: 'airport', icon: '✈️' }
+    { id: 'gansbaai', name: 'Gansbaai (sharks)', address: 'Kleinbaai Harbour', category: 'attraction', icon: '🦈' },
+    { id: 'atlantisdunes', name: 'Atlantis Dunes', address: 'Atlantis, Western Cape', category: 'attraction', icon: '🏜️' },
+    { id: 'lionshead', name: "Lion's Head", address: 'Signal Hill Rd, Cape Town', category: 'attraction', icon: '🏔️' },
+    { id: 'chefswarehouse', name: 'Chefs Warehouse Beau Constantia', address: 'Constantia, Cape Town', category: 'dining', icon: '🍷' },
+    { id: 'robben', name: 'Robben Island Ferry', address: 'V&A Waterfront', category: 'attraction', icon: '🏛️' },
+    { id: 'bokaap', name: 'Bo-Kaap', address: 'Cape Town', category: 'attraction', icon: '🎨' },
+    { id: 'hds', name: 'Hoedspruit Airport (HDS)', address: 'Hoedspruit', category: 'airport', icon: '✈️' },
+    { id: 'jnb', name: 'OR Tambo (JNB)', address: 'Johannesburg', category: 'airport', icon: '✈️' }
   ];
   const locationCategories = [
     { id: 'all', label: 'All' },
@@ -481,10 +477,11 @@ export default function TripApp() {
   };
 
   const flightSlots = [
-    { id: 'f1', label: 'EWR → CPT', route: 'Newark to Cape Town', date: 'June 1' },
-    { id: 'f2', label: 'CPT → HDS', route: 'Cape Town to Hoedspruit', date: 'June 9' },
-    { id: 'f3', label: 'HDS → JNB', route: 'Hoedspruit to Johannesburg', date: 'June 12' },
-    { id: 'f4', label: 'JNB → EWR', route: 'Johannesburg to Newark', date: 'June 13' }
+    { id: 'f1', label: 'MIA → ATL', route: 'Miami to Atlanta', date: 'May 31', preset: { airline: '', number: '', depart: 'MIA TBD', arrive: 'ATL TBD', confirmation: '' } },
+    { id: 'f2', label: 'ATL → CPT', route: 'Atlanta to Cape Town', date: 'June 1', preset: { airline: 'Delta', number: 'DL210', depart: 'ATL 9:00 PM', arrive: 'CPT 5:50 PM (+1)', confirmation: '' } },
+    { id: 'f3', label: 'CPT → JNB → HDS', route: 'Cape Town to Kruger', date: 'June 11', preset: { airline: '', number: '', depart: 'CPT TBD', arrive: 'HDS TBD', confirmation: '' } },
+    { id: 'f4', label: 'HDS → JNB → ATL', route: 'Kruger to Atlanta', date: 'June 14', preset: { airline: 'Delta', number: 'DL201', depart: 'JNB 9:55 PM', arrive: 'ATL 8:20 AM (+1)', confirmation: '' } },
+    { id: 'f5', label: 'ATL → MIA', route: 'Atlanta to Miami', date: 'June 15', preset: { airline: 'Delta', number: 'DL1332', depart: 'ATL 11:00 AM', arrive: 'MIA 1:04 PM', confirmation: '' } }
   ];
   const getFlightTrackUrl = (n) => n ? `https://www.google.com/search?q=${encodeURIComponent(n + ' flight status')}` : null;
 
@@ -509,7 +506,7 @@ export default function TripApp() {
 
   const getTodaysWeather = () => {
     if (!currentDay) return null;
-    const map = { 0: 'nyc', 1: 'nyc', 2: 'capetown', 3: 'capetown', 4: 'capetown', 5: 'capetown', 6: 'capetown', 7: 'capetown', 8: 'capetown', 9: 'hoedspruit', 10: 'hoedspruit', 11: 'hoedspruit', 12: 'johannesburg', 13: 'johannesburg', 14: 'nyc' };
+    const map = { 0: 'atlanta', 1: 'atlanta', 2: 'capetown', 3: 'capetown', 4: 'capetown', 5: 'capetown', 6: 'capetown', 7: 'capetown', 8: 'capetown', 9: 'capetown', 10: 'capetown', 11: 'hoedspruit', 12: 'hoedspruit', 13: 'hoedspruit', 14: 'hoedspruit', 15: 'atlanta' };
     const locId = map[currentDay.num];
     const loc = weatherLocations.find(w => w.id === locId);
     if (!loc) return null;
@@ -522,13 +519,13 @@ export default function TripApp() {
 
   const getTodaysReservations = () => {
     if (!currentDay) return [];
-    const kw = { 0: ['Manhattan','Carmine','Rock'], 3: ['Table Mountain'], 5: ['Robben'], 6: ['shark'], 8: ['Chefs'] }[currentDay.num] || [];
+    const kw = { 4: ['Table Mountain'], 6: ['Robben'], 8: ['shark'], 9: ['Atlantis'], 10: ['Chefs'], 11: ['lodge','HDS'] }[currentDay.num] || [];
     return Object.values(reservations).filter(r => kw.some(k => r.task?.toLowerCase().includes(k.toLowerCase())));
   };
   const todaysRez = getTodaysReservations();
 
   const generateShareText = () => {
-    let text = `🌍 Dan & son trip schedule\nMay 31 – June 14, 2026\n\n`;
+    let text = `🌍 Dan & son trip schedule\nMay 31 – June 15, 2026\n\n`;
     days.forEach(d => { text += `📅 ${d.date}\n${d.icon} ${d.title}\n${d.summary}\n\n`; });
     text += `🏠 Mom's house: 9 Soluta Street, Sunset Beach, Milnerton\n`;
     return text;
@@ -550,7 +547,7 @@ export default function TripApp() {
           </div>
           <div className="text-5xl mb-2">🦁</div>
           <h1 className="text-4xl font-bold mb-1">Hey Explorer!</h1>
-          <p className="text-sm opacity-80">{isDuringTrip ? `Trip Day ${tripDayIndex + 1} of 15` : `${daysUntil} days until adventure`}</p>
+          <p className="text-sm opacity-80">{isDuringTrip ? `Trip Day ${tripDayIndex + 1} of 16` : `${daysUntil} days until adventure`}</p>
         </div>
         <div className="px-4 mb-6">
           <div className="bg-black bg-opacity-30 rounded-2xl p-5">
@@ -596,12 +593,12 @@ export default function TripApp() {
         <div>
           <div className="relative overflow-hidden bg-gradient-to-br from-orange-900 via-rose-900 to-amber-950 px-6 pt-10 pb-8">
             <div className="text-amber-200 text-xs tracking-widest uppercase font-sans font-medium mb-3 opacity-70">Father & Son 2026</div>
-            <h1 className="text-4xl font-bold leading-tight mb-1 italic">Newark to the<br/><span className="text-amber-300">Wild Coast</span></h1>
-            <p className="text-amber-100 text-sm mt-4 font-sans opacity-70">May 31 — June 14</p>
+            <h1 className="text-4xl font-bold leading-tight mb-1 italic">Miami to the<br/><span className="text-amber-300">Wild Coast</span></h1>
+            <p className="text-amber-100 text-sm mt-4 font-sans opacity-70">May 31 — June 15</p>
             {isDuringTrip ? (
               <div className="mt-6">
                 <div className="text-xs font-sans opacity-70 uppercase tracking-wider">Trip Day</div>
-                <div className="flex items-end gap-3"><div className="text-7xl font-bold text-amber-200 leading-none">{tripDayIndex + 1}</div><div className="text-amber-100 text-sm pb-2 font-sans opacity-60">of 15</div></div>
+                <div className="flex items-end gap-3"><div className="text-7xl font-bold text-amber-200 leading-none">{tripDayIndex + 1}</div><div className="text-amber-100 text-sm pb-2 font-sans opacity-60">of 16</div></div>
               </div>
             ) : (
               <div className="mt-8 flex items-end gap-3"><div className="text-7xl font-bold text-amber-200 leading-none">{daysUntil}</div><div className="text-amber-100 text-sm pb-2 font-sans opacity-60">days<br/>to go</div></div>
@@ -1139,27 +1136,33 @@ export default function TripApp() {
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {flightSlots.map(slot => {
-              const f = flights[slot.id];
+              const saved = flights[slot.id];
+              const f = saved || slot.preset; // show preset if nothing saved yet
+              const isPresetOnly = !saved && slot.preset;
               return (
-                <div key={slot.id} className="bg-stone-900 rounded-xl border border-stone-800 overflow-hidden">
+                <div key={slot.id} className={`bg-stone-900 rounded-xl border overflow-hidden ${isPresetOnly && f.airline ? 'border-indigo-800' : 'border-stone-800'}`}>
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-bold text-stone-100">{slot.label}</div>
                       <div className="text-xs text-stone-500 font-sans">{slot.date}</div>
                     </div>
                     <div className="text-xs text-stone-400 font-sans mb-3">{slot.route}</div>
-                    {f && (
+                    {f && (f.airline || f.number) && (
                       <div className="space-y-1 pt-2 border-t border-stone-800 text-xs font-sans">
-                        {f.airline && <div className="text-stone-300">{f.airline}</div>}
+                        {f.airline && <div className="text-stone-300 font-semibold">{f.airline}</div>}
                         {f.number && <a href={getFlightTrackUrl(f.number)} target="_blank" rel="noopener noreferrer" className="text-indigo-400 font-mono flex items-center gap-1">{f.number} <ExternalLink size={10} /></a>}
                         {f.depart && <div className="text-stone-400">🛫 {f.depart}</div>}
                         {f.arrive && <div className="text-stone-400">🛬 {f.arrive}</div>}
                         {f.confirmation && <div className="text-amber-300 font-mono">🎫 {f.confirmation}</div>}
+                        {isPresetOnly && <div className="text-[10px] text-amber-400 italic mt-1">Tap to add confirmation #</div>}
                       </div>
                     )}
+                    {(!f || (!f.airline && !f.number)) && (
+                      <div className="text-xs text-rose-400 font-sans pt-2 border-t border-stone-800 italic">⚠️ Not yet booked</div>
+                    )}
                   </div>
-                  <button onClick={() => setShowFlightEdit({ ...f, id: slot.id, label: slot.label })} className="w-full text-left px-4 py-2 border-t border-stone-800 text-xs text-stone-400 font-sans flex items-center gap-1">
-                    <Save size={12} />{f ? 'Edit' : 'Add details'}
+                  <button onClick={() => setShowFlightEdit({ ...(slot.preset || {}), ...(saved || {}), id: slot.id, label: slot.label })} className="w-full text-left px-4 py-2 border-t border-stone-800 text-xs text-stone-400 font-sans flex items-center gap-1">
+                    <Save size={12} />{saved ? 'Edit' : 'Add details'}
                   </button>
                 </div>
               );
